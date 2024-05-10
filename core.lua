@@ -20,6 +20,7 @@ local function CreateMinimapDataBroker()
         icon = "Interface\\Icons\\inv_misc_questionmark",
         OnClick = function(_, button)
             if button == "LeftButton" then
+                -- Toggle visibility of the main content frame
                 if mainContent and mainContent:IsShown() then
                     mainContent:Hide()
                 else
@@ -27,15 +28,16 @@ local function CreateMinimapDataBroker()
                 end
             end
         end,
-        OnTooltipShow = function(tt) -- Tooltip when hovering over the icon
+        OnTooltipShow = function(tt)
             tt:AddLine("LootCouncilRandomizer")
-            tt:AddLine(" ")
             tt:AddLine("Click to toggle main window")
         end
     })
 
     -- Register Minimap icon
-    LibDBIcon:Register("LootCouncilRandomizer", LCR_LDB, addon.db.profile.minimap)
+    if addon.db and addon.db.profile then
+        LibDBIcon:Register("LootCouncilRandomizer", LCR_LDB, addon.db.profile.minimap)
+    end
 end
 
 function addon:HandleGuildRosterUpdate()
@@ -69,6 +71,8 @@ function addon:OnInitialize()
     self.DB = LootCouncilRandomizerDB
     self.GuildDB = LootCouncilRandomizerGuildDB
     self:InitializeAddon()
+    self:RegisterChatCommand()
+    self:CreateMainFrame()
 
     -- Create Minimap Button
     CreateMinimapDataBroker()
@@ -140,7 +144,7 @@ end
 function addon:RegisterChatCommand()
     SLASH_LOOTCOUNCILRANDOMIZER1 = "/lcr"
     SlashCmdList["LOOTCOUNCILRANDOMIZER"] = function()
-        addon:ShowMainFrame()
+        self:ShowMainFrame()
     end
 end
 

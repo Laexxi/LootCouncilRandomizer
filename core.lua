@@ -6,23 +6,50 @@ local LibDataBroker = LibStub("LibDataBroker-1.1")
 local LibDBIcon = LibStub("LibDBIcon-1.0")
 local ADDON_NAME = "LootCouncilRandomizer"
 local addon = AceAddon:NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
+local orderCounter = 0
+
+-- Helper function to get the next order
+local function nextOrder()
+    orderCounter = orderCounter + 1
+    return orderCounter
+end
+
+-- Function to retrieve guild ranks
+function addon:GetGuildRanks()
+    local ranks = {}
+    if IsInGuild() then
+        for i = 0, GuildControlGetNumRanks() - 1 do
+            ranks[i+1] = GuildControlGetRankName(i)
+        end
+    end
+    return ranks
+end
 
 
-function addon:OnInitialize()
-    -- Database setup
-    self.db = AceDB:New("LootCouncilRandomizerDB", { profile = {} })
-
-    local function getGuildRanks()
-        local ranks = {}
-        if IsInGuild() then
-            for i = 1, GuildControlGetNumRanks() do
-                ranks[i] = GuildControlGetRankName(i)
+-- Function to retrieve guild members by minimum rank
+function addon:GetGuildMembersByMinRank()
+    local membersByRank = {}
+    if IsInGuild() then
+        local minRankIndex = self.db.profile.selectedRankIndex or 0
+        for i = 1, GetNumGuildMembers() do
+            local name, rank, rankIndex = GetGuildRosterInfo(i)
+            if rankIndex and rankIndex <= minRankIndex then -- Include members of selected rank and higher ranks
+                name = name:match("([^%-]+)") -- Strip the server name from the player's name
+                membersByRank[rank] = membersByRank[rank] or {}
+                table.insert(membersByRank[rank], name)
             end
         end
-        return ranks
     end
+    return membersByRank
+end
 
-    -- Define the structure of your configuration options
+function addon:OnInitialize()
+    -- Initial DB setup
+    self.db = AceDB:New("LootCouncilRandomizerDB", { profile = {} })
+    self:RegisterOptions()
+end
+
+function addon:RegisterOptions()
     local options = {
         name = ADDON_NAME,
         handler = addon,
@@ -31,49 +58,31 @@ function addon:OnInitialize()
             guildroster = {
                 type = "group",
                 name = "Gildenübersicht",
-                order = 1,
-                args = {
-                    desc = {
-                        type = "description",
-                        name = "Gildenübersicht",
-                        order = 1
-                    },
-                },
+                order = nextOrder(),
+                args = self:UpdateGuildRosterOptions()
             },
             settings = {
                 type = "group",
                 name = "Settings",
-                order = 2,
+                order = nextOrder(),
                 args = {
                     desc = {
                         type = "description",
                         name = "Settings for the Loot Council Randomizer.",
-                        order = 1
-                    },
-                    emptyLine = {
-                        type = "description",
-                        name = "",
-                        order = 1.5,
-                        width = "full"
-                    },
-                    emptyLine = {
-                        type = "description",
-                        name = "",
-                        order = 1.5,
-                        width = "full"
+                        order = nextOrder()
                     },
                     guildRank = {
                         type = "select",
                         name = "Mindestrang für das LootCouncil",
                         desc = "Wähle den minimalen Gildenrang, der teilnehmen darf.",
-                        values = getGuildRanks(),
-                        order = 2,
+                        values = function() return self:GetGuildRanks() end,
+                        order = nextOrder(),
                         get = function(info)
-                            return addon.db.profile.selectedRankIndex or 1
+                            return self.db.profile.selectedRankIndex or 0
                         end,
                         set = function(info, value)
-                            addon.db.profile.selectedRankIndex = value
-                            addon.db.profile.selectedRankName = GuildControlGetRankName(value)
+                            self.db.profile.selectedRankIndex = value - 1 -- Set index to match the game's zero-based index
+                            self.db.profile.selectedRankName = GuildControlGetRankName(value - 1)
                         end,
                     },
                     councilSize = {
@@ -83,30 +92,29 @@ function addon:OnInitialize()
                         min = 1,
                         max = 30,
                         step = 1,
-                        order = 3,
+                        order = nextOrder(),
                         get = function(info)
-                            return addon.db.profile.councilSize or 5
+                            return self.db.profile.councilSize or 5
                         end,
                         set = function(info, value)
-                            addon.db.profile.councilSize = value
+                            self.db.profile.councilSize = value
                         end,
                     },
                     councilPots = {
                         type = "range",
                         name = "Anzahl an Lostöpfen",
-                        desc = "Aus wie vielen Gruppen soll das LootCouncil bestehen.\n Bps: 4 Gesamt, 2 Offiziere, 2 Raider",
+                        desc = "Aus wie vielen Gruppen soll das LootCouncil bestehen.",
                         min = 1,
-                        max = 30, -- adjust this to match practical limits
+                        max = 30,
                         step = 1,
-                        order = 4,
+                        order = nextOrder(),
                         get = function(info)
-                            return addon.db.profile.councilPots or 1
+                            return self.db.profile.councilPots or 1
                         end,
                         set = function(info, value)
-                            if value <= addon.db.profile.councilSize then
-                                addon.db.profile.councilPots = value
+                            if value <= self.db.profile.councilSize then
+                                self.db.profile.councilPots = value
                             else
-                                -- Add logic to handle error or inform the user
                                 print("Anzahl der Lostöpfe kann nicht größer als die Anzahl der Council-Mitglieder sein.")
                             end
                         end,
@@ -118,31 +126,29 @@ function addon:OnInitialize()
                         func = function()
                             print("Einstellungen gespeichert.")
                         end,
-                        order = 5,
+                        order = nextOrder(),
                     },
                 },
             },
             about = {
                 type = "group",
                 name = "About",
-                order = 5,
+                order = nextOrder(),
                 args = {
                     desc = {
                         type = "description",
                         name = "Loot Council Randomizer Version 1.0\nAuthor: Laexxi",
-                        order = 1
+                        order = nextOrder()
                     },
                 },
             },
         },
     }
 
-    -- Register options table and create standalone window
     AceConfig:RegisterOptionsTable(ADDON_NAME, options)
     self.configFrame = AceConfigDialog:AddToBlizOptions(ADDON_NAME, ADDON_NAME)
     AceConfigDialog:SetDefaultSize(ADDON_NAME, 600, 400)
 
-    -- Minimap button setup
     local ldb = LibDataBroker:NewDataObject(ADDON_NAME, {
         type = "launcher",
         text = ADDON_NAME,
@@ -151,7 +157,6 @@ function addon:OnInitialize()
             if button == "RightButton" then
                 AceConfigDialog:Open(ADDON_NAME)
             elseif button == "LeftButton" then
-                -- Reserved for future functionality
                 print("Left click action will be added here.")
             end
         end,
@@ -163,16 +168,45 @@ function addon:OnInitialize()
     })
 
     LibDBIcon:Register(ADDON_NAME, ldb, self.db.profile.minimap)
-
-    -- Register chat command
     self:RegisterChatCommand("lcr", "ChatCommand")
 end
 
 function addon:ChatCommand()
-    -- This function toggles the configuration panel
     if AceConfigDialog.OpenFrames[ADDON_NAME] then
         AceConfigDialog:Close(ADDON_NAME)
     else
         AceConfigDialog:Open(ADDON_NAME)
     end
+end
+
+function addon:UpdateGuildRosterOptions()
+    local membersByRank = self:GetGuildMembersByMinRank()
+    local args = {}
+    for rank, members in pairs(membersByRank) do
+        args[rank] = {
+            type = "group",
+            name = rank,
+            order = nextOrder(),
+            args = {}
+        }
+        for i, name in ipairs(members) do
+            args[rank].args[name] = {
+                type = "description",
+                name = name,
+                desc = "Member of " .. rank,
+                order = i
+            }
+        end
+    end
+    return args
+end
+
+function addon:OnEnable()
+    self:RegisterEvent("GUILD_ROSTER_UPDATE", "HandleGuildRosterUpdate")
+end
+
+function addon:HandleGuildRosterUpdate()
+    local rosterArgs = self:UpdateGuildRosterOptions()
+    self.options.args.guildroster.args = rosterArgs
+    AceConfigRegistry:NotifyChange(ADDON_NAME)
 end

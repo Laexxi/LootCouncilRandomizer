@@ -1,6 +1,5 @@
-## Interface: 100207
-
-## Title: #LootCouncilRandomizer
+## Interface: 110000
+## Title: LootCouncilRandomizer
 ## Author: Laexxi-Antonidas
 ## Version: 1.0
 ## Notes: Helps with randomly selecting Council Members.
@@ -17,4 +16,8 @@ libs\LibDBIcon-1.0\LibDBIcon-1.0\LibDBIcon-1.0.lua
 libs\LibGroupInSpecT-1.1\LibGroupInSpecT-1.1.lua
 
 core.lua
+modules\config.lua
+modules\guild.lua
+modules\randomizer.lua
+modules\statistics.lua
 

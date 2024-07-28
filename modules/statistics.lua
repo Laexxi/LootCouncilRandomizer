@@ -11,12 +11,20 @@ function ns.statistics:GetOptions()
                 name = "Reset Statistics",
                 func = function()
                     -- Logic to reset statistics
+                    LootCouncilRandomizer.db.profile.statistics = {}
                     print("Statistics reset.")
                 end,
             },
             statsDescription = {
                 type = "description",
-                name = "Statistics will be displayed here.",
+                name = function()
+                    local stats = LootCouncilRandomizer.db.profile.statistics or {}
+                    local desc = "Statistics:\n"
+                    for member, data in pairs(stats) do
+                        desc = desc .. member .. ": " .. data.timesSelected .. " times, last selected " .. data.lastSelected .. "\n"
+                    end
+                    return desc
+                end,
             },
         },
     }

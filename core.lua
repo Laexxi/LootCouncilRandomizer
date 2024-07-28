@@ -2,9 +2,18 @@ local ADDON_NAME, ns = ...
 LootCouncilRandomizer = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
 
 function LootCouncilRandomizer:OnInitialize()
-    self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", { profile = {} })
+    self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", {
+        char = { -- Use 'char' for character-specific profiles
+            minimap = { hide = false },
+            selectedRankIndex = 1,
+            councilSize = 5,
+            councilPots = 1,
+            statistics = {},
+        }
+    })
     self:SetupOptions()
     self:SetupMinimapButton()
+    ns.config:UpdateGroupNames(self.db.char.councilPots or 1)
 end
 
 function LootCouncilRandomizer:OnEnable()
@@ -23,6 +32,7 @@ function LootCouncilRandomizer:SetupOptions()
         },
     }
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
+    self.options = options -- Initialize self.options here
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
 end
 
@@ -30,7 +40,7 @@ function LootCouncilRandomizer:SetupMinimapButton()
     local ldb = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {
         type = "launcher",
         text = ADDON_NAME,
-        icon = "Interface\\Icons\\inv_misc_questionmark",
+        icon = "Interface\\AddOns\\LootCouncilRandomizer\\icon.tga",
         OnClick = function(_, button)
             if button == "RightButton" then
                 LibStub("AceConfigDialog-3.0"):Open(ADDON_NAME)
@@ -44,7 +54,7 @@ function LootCouncilRandomizer:SetupMinimapButton()
             tt:AddLine("Left-click to randomize council.")
         end,
     })
-    LibStub("LibDBIcon-1.0"):Register(ADDON_NAME, ldb, self.db.profile.minimap)
+    LibStub("LibDBIcon-1.0"):Register(ADDON_NAME, ldb, self.db.char.minimap)
 end
 
 function LootCouncilRandomizer:UpdateGuildRoster()

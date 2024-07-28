@@ -1,36 +1,48 @@
+-- This file is part of the LootCouncilRandomizer addon for World of Warcraft.
+-- It provides functionality for managing guild members and their ranks.
 local ADDON_NAME, ns = ...
 ns.guild = {}
 
--- Function to normalize rank indices
+-- Function to normalize rank indices; Different WoW APIs return different indices. Eg. Guildmaster could be 0 or 1. Maybe not needed anymore but its working ;)
 function ns.guild:NormalizeRankIndex(rankIndex)
+    -- Return 0 for the Guildmaster rank
     if rankIndex == 0 then
-        return 0 -- Guildmaster rank
+        return 0
+    -- Return 1 for the next rank
     elseif rankIndex == 1 then
-        return 1 -- Next rank (previously normalized incorrectly)
+        return 1
     else
-        return rankIndex -- No normalization needed
+        return rankIndex
     end
 end
 
+-- Function to retrieve all the guild ranks
 function ns.guild:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
+        -- Iterate over the guild ranks
         for i = 1, GuildControlGetNumRanks() do
+            -- Normalize the rank index
             local normalizedIndex = self:NormalizeRankIndex(i - 1)
+            -- Add the rank to the list
             ranks[normalizedIndex] = GuildControlGetRankName(i - 1)
         end
     end
     return ranks
 end
 
+-- Function to retrieve guild members by minimum rank
 function ns.guild:GetGuildMembersByMinRank()
     local membersByRank = {}
+    -- Check if the player is in a guild
     if IsInGuild() then
+        -- Get the minimum rank index
         local minRankIndex = LootCouncilRandomizer.db.char.selectedRankIndex or 1
         minRankIndex = minRankIndex - 1 -- Adjust for zero-based index from WoW API
         for i = 1, GetNumGuildMembers() do
             local name, rank, rankIndex = GetGuildRosterInfo(i)
             name = name:match("([^%-]+)") -- Remove server name from player name
+            -- add the player to the list if the rank index is greater than or equal to the minimum rank index
             if rankIndex <= minRankIndex then
                 membersByRank[rank] = membersByRank[rank] or {}
                 table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
@@ -40,6 +52,7 @@ function ns.guild:GetGuildMembersByMinRank()
     return membersByRank
 end
 
+-- Function to update the options for the guild roster
 function ns.guild:GetOptions()
     return {
         name = "Guild Overview",
@@ -48,6 +61,7 @@ function ns.guild:GetOptions()
     }
 end
 
+-- Function to update the options for the guild roster
 function ns.guild:UpdateGuildRosterOptions()
     local membersByRank = ns.guild:GetGuildMembersByMinRank()
     local args = {
@@ -63,12 +77,14 @@ function ns.guild:UpdateGuildRosterOptions()
     local orderCounter = 1
     local sortedRanks = {}
 
+    -- Sort the ranks by their rank index
     for rank, members in pairs(membersByRank) do
         table.insert(sortedRanks, {rank = rank, rankIndex = members[1].rankIndex})
     end
 
     table.sort(sortedRanks, function(a, b) return a.rankIndex < b.rankIndex end)
 
+    -- create options for each rank and member
     for _, rankInfo in ipairs(sortedRanks) do
         local rank = rankInfo.rank
         args["header_" .. rank] = {
@@ -138,6 +154,7 @@ function ns.guild:UpdateGuildRosterOptions()
     return args
 end
 
+-- Function to update the guild roster
 function ns.guild:UpdateGuildRoster()
     local rosterArgs = ns.guild:UpdateGuildRosterOptions()
     if LootCouncilRandomizer.options then

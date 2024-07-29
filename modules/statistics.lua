@@ -1,3 +1,15 @@
+--[[
+statistics.lua
+Handles the statistics tracking for the LootCouncilRandomizer addon.
+Tracks the selection history and provides options to view and reset statistics.
+
+Functions:
+- GetOptions: Returns the configuration options for the statistics overview.
+- RecordSelection: Records the selection of council members for tracking purposes.
+- GetStatistics: Retrieves the selection statistics.
+- ResetStatistics: Resets the selection statistics.
+]]
+
 local ADDON_NAME, ns = ...
 ns.statistics = {}
 

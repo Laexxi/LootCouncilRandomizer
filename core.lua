@@ -1,8 +1,21 @@
+--[[
+core.lua
+Main entry point for the LootCouncilRandomizer addon.
+Handles initialization, setup of options, and minimap button.
+
+Functions:
+- OnInitialize: Initializes the addon, sets up the database and options.
+- OnEnable: Registers events when the addon is enabled.
+- SetupOptions: Configures the addon options and integrates them with the WoW interface.
+- SetupMinimapButton: Sets up the minimap button with left and right-click functionalities.
+- UpdateGuildRoster: Updates the guild roster data.
+- ChatCommand: Handles custom chat commands for the addon.
+]]
+
 local ADDON_NAME, ns = ...
 LootCouncilRandomizer = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
 
 function LootCouncilRandomizer:OnInitialize()
-    -- character specific db
     self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", {
         char = {
             minimap = { hide = false },
@@ -15,6 +28,7 @@ function LootCouncilRandomizer:OnInitialize()
     self:SetupOptions()
     self:SetupMinimapButton()
     ns.config:UpdateGroupNames(self.db.char.councilPots or 1)
+    self:RegisterChatCommand("lcr", "ChatCommand")
 end
 
 function LootCouncilRandomizer:OnEnable()
@@ -33,7 +47,7 @@ function LootCouncilRandomizer:SetupOptions()
         },
     }
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
-    self.options = options 
+    self.options = options
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
 end
 
@@ -60,4 +74,14 @@ end
 
 function LootCouncilRandomizer:UpdateGuildRoster()
     ns.guild:UpdateGuildRoster()
+end
+
+function LootCouncilRandomizer:ChatCommand(input)
+    if not input or input:trim() == "" then
+        LibStub("AceConfigDialog-3.0"):Open(ADDON_NAME)
+    elseif input:trim() == "roll" then
+        ns.randomizer:RandomizeCouncil()
+    else
+        print("Usage: /lcr or /lcr roll")
+    end
 end

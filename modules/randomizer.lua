@@ -1,3 +1,18 @@
+--[[
+randomizer.lua
+Handles the randomization and selection process for the LootCouncilRandomizer addon.
+Ensures that only members currently in the raid are considered and selects members based on group settings.
+
+Functions:
+- RandomizeCouncil: Main function to randomize and select the council members.
+- GetRaidMembers: Retrieves the list of current raid members.
+- GetGroupMembersInRaid: Filters and retrieves group members who are currently in the raid.
+- GetMemberGroup: Determines the group a member belongs to, prioritizing individual assignments over rank-based ones.
+- GetMemberRank: Retrieves the rank of a given member.
+- SelectRandomMembers: Randomly selects the specified number of members from a given group.
+- AnnounceCouncil: Announces the selected council members in the raid chat.
+]]
+
 local ADDON_NAME, ns = ...
 ns.randomizer = {}
 

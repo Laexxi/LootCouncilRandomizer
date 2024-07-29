@@ -1,5 +1,16 @@
--- This file is part of the LootCouncilRandomizer addon for World of Warcraft.
--- It provides functionality for managing guild members and their ranks.
+--[[
+guild.lua
+Handles guild-related data and options for the LootCouncilRandomizer addon.
+Provides functions to retrieve guild ranks and members, and updates the guild roster.
+
+Functions:
+- NormalizeRankIndex: Normalizes guild rank indices to handle the Guildmaster rank.
+- GetGuildRanks: Retrieves the guild ranks and normalizes their indices.
+- GetGuildMembersByMinRank: Retrieves guild members based on the minimum rank allowed to participate.
+- GetOptions: Returns the configuration options for the guild roster.
+- UpdateGuildRosterOptions: Updates the guild roster options with current guild members and their assigned groups.
+- UpdateGuildRoster: Updates the guild roster data when called.
+]]
 local ADDON_NAME, ns = ...
 ns.guild = {}
 

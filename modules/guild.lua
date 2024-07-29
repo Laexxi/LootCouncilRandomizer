@@ -6,72 +6,53 @@ Provides functions to retrieve guild ranks and members, and updates the guild ro
 Functions:
 - NormalizeRankIndex: Normalizes guild rank indices to handle the Guildmaster rank.
 - GetGuildRanks: Retrieves the guild ranks and normalizes their indices.
-- GetGuildMembersByMinRank: Retrieves guild members based on the minimum rank allowed to participate.
-- GetOptions: Returns the configuration options for the guild roster.
-- UpdateGuildRosterOptions: Updates the guild roster options with current guild members and their assigned groups.
-- UpdateGuildRoster: Updates the guild roster data when called.
-
-API Calls:
-- IsInGuild: Checks if the player is in a guild.
-- GuildControlGetNumRanks: Retrieves the number of guild ranks.
-- GuildControlGetRankName: Retrieves the name of a guild rank.
-- GetNumGuildMembers: Retrieves the number of guild members.
-- GetGuildRosterInfo: Retrieves information about a guild member.
-
+- GetGuildMembersBySelectedRanks: Retrieves guild members based on the selected ranks.
+- GetOptions: Returns the configuration options for the guild overview.
+- UpdateGuildRosterOptions: Updates the guild roster options based on current guild data.
+- UpdateGuildRoster: Refreshes the guild roster options and notifies the configuration registry.
 ]]
+
 local ADDON_NAME, ns = ...
 ns.guild = {}
 
--- Function to normalize rank indices; Different WoW APIs return different indices. Eg. Guildmaster could be 0 or 1. Maybe not needed anymore but its working ;)
+-- Function to normalize rank indices
 function ns.guild:NormalizeRankIndex(rankIndex)
-    -- Return 0 for the Guildmaster rank
     if rankIndex == 0 then
-        return 0
-    -- Return 1 for the next rank
+        return 0 -- Guildmaster rank
     elseif rankIndex == 1 then
-        return 1
+        return 1 -- Next rank (previously normalized incorrectly)
     else
-        return rankIndex
+        return rankIndex -- No normalization needed
     end
 end
 
--- Function to retrieve all the guild ranks
 function ns.guild:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
-        -- Iterate over the guild ranks
         for i = 1, GuildControlGetNumRanks() do
-            -- Normalize the rank index
             local normalizedIndex = self:NormalizeRankIndex(i - 1)
-            -- Add the rank to the list
             ranks[normalizedIndex] = GuildControlGetRankName(i - 1)
         end
     end
     return ranks
 end
 
--- Function to retrieve guild members by minimum rank
-function ns.guild:GetGuildMembersByMinRank()
+function ns.guild:GetGuildMembersBySelectedRanks()
     local membersByRank = {}
-    -- Check if the player is in a guild
     if IsInGuild() then
-        -- Get the minimum rank index
-        local minRankIndex = LootCouncilRandomizer.db.char.selectedRankIndex or 1
-        minRankIndex = minRankIndex - 1 -- Adjust for zero-based index from WoW API
         for i = 1, GetNumGuildMembers() do
             local name, rank, rankIndex = GetGuildRosterInfo(i)
             name = name:match("([^%-]+)") -- Remove server name from player name
-            -- add the player to the list if the rank index is greater than or equal to the minimum rank index
-            if rankIndex <= minRankIndex then
+            local normalizedIndex = self:NormalizeRankIndex(rankIndex)
+            if LootCouncilRandomizer.db.char.selectedRanks[normalizedIndex] then
                 membersByRank[rank] = membersByRank[rank] or {}
-                table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
+                table.insert(membersByRank[rank], {name = name, rankIndex = normalizedIndex})
             end
         end
     end
     return membersByRank
 end
 
--- Function to update the options for the guild roster
 function ns.guild:GetOptions()
     return {
         name = "Guild Overview",
@@ -80,9 +61,8 @@ function ns.guild:GetOptions()
     }
 end
 
--- Function to update the options for the guild roster
 function ns.guild:UpdateGuildRosterOptions()
-    local membersByRank = ns.guild:GetGuildMembersByMinRank()
+    local membersByRank = ns.guild:GetGuildMembersBySelectedRanks()
     local args = {
         updateButton = {
             type = "execute",
@@ -96,14 +76,12 @@ function ns.guild:UpdateGuildRosterOptions()
     local orderCounter = 1
     local sortedRanks = {}
 
-    -- Sort the ranks by their rank index
     for rank, members in pairs(membersByRank) do
         table.insert(sortedRanks, {rank = rank, rankIndex = members[1].rankIndex})
     end
 
     table.sort(sortedRanks, function(a, b) return a.rankIndex < b.rankIndex end)
 
-    -- create options for each rank and member
     for _, rankInfo in ipairs(sortedRanks) do
         local rank = rankInfo.rank
         args["header_" .. rank] = {
@@ -173,7 +151,6 @@ function ns.guild:UpdateGuildRosterOptions()
     return args
 end
 
--- Function to update the guild roster
 function ns.guild:UpdateGuildRoster()
     local rosterArgs = ns.guild:UpdateGuildRosterOptions()
     if LootCouncilRandomizer.options then

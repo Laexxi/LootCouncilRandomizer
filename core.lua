@@ -19,7 +19,7 @@ function LootCouncilRandomizer:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", {
         char = {
             minimap = { hide = false },
-            selectedRankIndex = 1,
+            selectedRanks = {},
             councilSize = 5,
             councilPots = 1,
             statistics = {},
@@ -27,8 +27,7 @@ function LootCouncilRandomizer:OnInitialize()
     })
     self:SetupOptions()
     self:SetupMinimapButton()
-    ns.config:UpdateGroupNames(self.db.char.councilPots or 1)
-    self:RegisterChatCommand("lcr", "ChatCommand")
+    ns.config:UpdateGroupNames(self.db.char.councilPots or 1) -- Ensure group names are updated here
 end
 
 function LootCouncilRandomizer:OnEnable()
@@ -49,6 +48,7 @@ function LootCouncilRandomizer:SetupOptions()
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
     self.options = options
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
+    ns.config:UpdateGroupNames(self.db.char.councilPots or 1) -- Ensure group names are updated after setting up options
 end
 
 function LootCouncilRandomizer:SetupMinimapButton()

@@ -1,13 +1,15 @@
 --[[
 config.lua
 Handles the configuration and settings for the LootCouncilRandomizer addon.
-Provides options for general settings, group names, and group selection.
+Provides options for general settings and groups.
 
 Functions:
 - GetOptions: Returns the configuration options for the addon.
-- GetGroupOptions: Returns the options for naming the groups.
-- GetGroupSelectionOptions: Returns the options for selecting the number of members per group.
+- GetGroupOptions: Returns the options for naming the groups and selecting the number of members per group.
 - UpdateGroupNames: Updates group names and their selection options based on the number of groups.
+- ImportAllRanks: Imports all guild ranks and updates the rank selection.
+- AdjustGroupSelection: Adjusts group selection numbers to ensure the total does not exceed the maximum council size.
+- ClampGroupSelections: Ensures group selections are within the bounds of the council size.
 ]]
 
 local ADDON_NAME, ns = ...
@@ -29,19 +31,29 @@ function ns.config:GetOptions()
                         name = "Settings for the Loot Council Randomizer.",
                         order = 1,
                     },
-                    guildRank = {
-                        type = "select",
-                        name = "Minimum Rank for Loot Council",
-                        desc = "Select the minimum guild rank allowed to participate.",
-                        values = function() return ns.guild:GetGuildRanks() end,
-                        get = function(info)
-                            return LootCouncilRandomizer.db.char.selectedRankIndex or 1
-                        end,
-                        set = function(info, value)
-                            LootCouncilRandomizer.db.char.selectedRankIndex = value
-                            LootCouncilRandomizer.db.char.selectedRankName = GuildControlGetRankName(value - 1)
+                    importRanks = {
+                        type = "execute",
+                        name = "Import All Ranks",
+                        desc = "Import all guild ranks.",
+                        func = function()
+                            ns.config:ImportAllRanks()
                         end,
                         order = 2,
+                    },
+                    rankSelection = {
+                        type = "multiselect",
+                        name = "Select Ranks",
+                        desc = "Select the ranks to include.",
+                        values = function()
+                            return ns.guild:GetGuildRanks()
+                        end,
+                        get = function(info, key)
+                            return LootCouncilRandomizer.db.char.selectedRanks[key] or false
+                        end,
+                        set = function(info, key, value)
+                            LootCouncilRandomizer.db.char.selectedRanks[key] = value
+                        end,
+                        order = 3,
                     },
                     councilSize = {
                         type = "range",
@@ -55,8 +67,9 @@ function ns.config:GetOptions()
                         end,
                         set = function(info, value)
                             LootCouncilRandomizer.db.char.councilSize = value
+                            ns.config:ClampGroupSelections(value)
                         end,
-                        order = 3,
+                        order = 4,
                     },
                     councilPots = {
                         type = "range",
@@ -72,7 +85,7 @@ function ns.config:GetOptions()
                             LootCouncilRandomizer.db.char.councilPots = value
                             ns.config:UpdateGroupNames(value)
                         end,
-                        order = 4,
+                        order = 5,
                     },
                 },
             },
@@ -82,19 +95,13 @@ function ns.config:GetOptions()
                 order = 2,
                 args = ns.config:GetGroupOptions(),
             },
-            groupSelection = {
-                type = "group",
-                name = "Group Selection",
-                order = 3,
-                args = ns.config:GetGroupSelectionOptions(),
-            },
             saveSettings = {
                 type = "execute",
                 name = "Save Settings",
                 func = function()
                     print("Settings saved.")
                 end,
-                order = 4,
+                order = 3,
             },
         },
     }
@@ -105,6 +112,7 @@ end
 function ns.config:GetGroupOptions()
     local groupOptions = {}
     local groupCount = LootCouncilRandomizer.db.char.councilPots or 1
+    local councilSize = LootCouncilRandomizer.db.char.councilSize or 5
 
     for i = 1, groupCount do
         groupOptions["group" .. i] = {
@@ -117,36 +125,27 @@ function ns.config:GetGroupOptions()
             set = function(info, value)
                 LootCouncilRandomizer.db.char["groupName" .. i] = value
             end,
-            order = i,
+            order = i * 2 - 1,
         }
-    end
-
-    return groupOptions
-end
-
-function ns.config:GetGroupSelectionOptions()
-    local groupSelectionOptions = {}
-    local groupCount = LootCouncilRandomizer.db.char.councilPots or 1
-
-    for i = 1, groupCount do
-        groupSelectionOptions["groupSelection" .. i] = {
+        groupOptions["groupSelection" .. i] = {
             type = "range",
-            name = "Number of " .. (LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i),
+            name = "Number of members selected from " .. (LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i),
             desc = "Set the number of members selected from " .. (LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i),
             min = 0,
-            max = 30,
+            max = councilSize, -- Clamp to council size
             step = 1,
             get = function(info)
                 return LootCouncilRandomizer.db.char["groupSelection" .. i] or 0
             end,
             set = function(info, value)
                 LootCouncilRandomizer.db.char["groupSelection" .. i] = value
+                ns.config:AdjustGroupSelection(i, value)
             end,
-            order = i,
+            order = i * 2,
         }
     end
 
-    return groupSelectionOptions
+    return groupOptions
 end
 
 function ns.config:UpdateGroupNames(count)
@@ -161,9 +160,76 @@ function ns.config:UpdateGroupNames(count)
         LootCouncilRandomizer.db.char["groupSelection" .. i] = nil
     end
 
-    if LootCouncilRandomizer.options then
+    if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.groups then
         LootCouncilRandomizer.options.args.groups.args = ns.config:GetGroupOptions()
-        LootCouncilRandomizer.options.args.groupSelection.args = ns.config:GetGroupSelectionOptions()
+        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+    end
+end
+
+function ns.config:ClampGroupSelections(maxValue)
+    local total = 0
+    local groupCount = LootCouncilRandomizer.db.char.councilPots or 1
+
+    for i = 1, groupCount do
+        local selection = LootCouncilRandomizer.db.char["groupSelection" .. i] or 0
+        if selection > maxValue then
+            selection = maxValue
+        end
+        total = total + selection
+    end
+
+    if total > maxValue then
+        ns.config:AdjustGroupSelection(1, maxValue) -- Start adjustment from the first group
+    end
+
+    if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.groups then
+        LootCouncilRandomizer.options.args.groups.args = ns.config:GetGroupOptions()
+        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+    end
+end
+
+function ns.config:AdjustGroupSelection(changedGroup, newValue)
+    local maxCouncilSize = LootCouncilRandomizer.db.char.councilSize
+    local total = 0
+    local groupCount = LootCouncilRandomizer.db.char.councilPots or 1
+
+    for i = 1, groupCount do
+        if i ~= changedGroup then
+            total = total + (LootCouncilRandomizer.db.char["groupSelection" .. i] or 0)
+        end
+    end
+
+    total = total + newValue
+    if total > maxCouncilSize then
+        local excess = total - maxCouncilSize
+        for i = 1, groupCount do
+            if i ~= changedGroup and excess > 0 then
+                local currentSelection = LootCouncilRandomizer.db.char["groupSelection" .. i] or 0
+                if currentSelection > 0 then
+                    local reduction = math.min(currentSelection, excess)
+                    LootCouncilRandomizer.db.char["groupSelection" .. i] = currentSelection - reduction
+                    excess = excess - reduction
+                end
+            end
+        end
+    end
+
+    if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.groups then
+        LootCouncilRandomizer.options.args.groups.args = ns.config:GetGroupOptions()
+        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+    end
+end
+
+function ns.config:ImportAllRanks()
+    local ranks = ns.guild:GetGuildRanks()
+    for key, _ in pairs(ranks) do
+        LootCouncilRandomizer.db.char.selectedRanks[key] = true
+    end
+    ns.config:UpdateRankSelection()
+end
+
+function ns.config:UpdateRankSelection()
+    if LootCouncilRandomizer.options then
         LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
     end
 end

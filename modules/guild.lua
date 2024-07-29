@@ -10,6 +10,14 @@ Functions:
 - GetOptions: Returns the configuration options for the guild roster.
 - UpdateGuildRosterOptions: Updates the guild roster options with current guild members and their assigned groups.
 - UpdateGuildRoster: Updates the guild roster data when called.
+
+API Calls:
+- IsInGuild: Checks if the player is in a guild.
+- GuildControlGetNumRanks: Retrieves the number of guild ranks.
+- GuildControlGetRankName: Retrieves the name of a guild rank.
+- GetNumGuildMembers: Retrieves the number of guild members.
+- GetGuildRosterInfo: Retrieves information about a guild member.
+
 ]]
 local ADDON_NAME, ns = ...
 ns.guild = {}

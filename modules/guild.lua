@@ -1,39 +1,25 @@
---[[
-guild.lua
-Handles guild-related data and options for the LootCouncilRandomizer addon.
-Provides functions to retrieve guild ranks and members, and updates the guild roster.
-
-Functions:
-- NormalizeRankIndex: Normalizes guild rank indices to handle the Guildmaster rank.
-- GetGuildRanks: Retrieves the guild ranks and normalizes their indices.
-- GetGuildMembersBySelectedRanks: Retrieves guild members based on the selected ranks.
-- GetOptions: Returns the configuration options for the guild overview.
-- UpdateGuildRosterOptions: Updates the guild roster options based on current guild data.
-- UpdateGuildRoster: Refreshes the guild roster options and notifies the configuration registry.
-]]
-
 local ADDON_NAME, ns = ...
 ns.guild = {}
-
--- Function to normalize rank indices
-function ns.guild:NormalizeRankIndex(rankIndex)
-    if rankIndex == 0 then
-        return 0 -- Guildmaster rank
-    elseif rankIndex == 1 then
-        return 1 -- Next rank (previously normalized incorrectly)
-    else
-        return rankIndex -- No normalization needed
-    end
-end
 
 function ns.guild:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
         for i = 1, GuildControlGetNumRanks() do
-            local normalizedIndex = self:NormalizeRankIndex(i - 1)
-            ranks[normalizedIndex] = GuildControlGetRankName(i - 1)
+            local rankName = GuildControlGetRankName(i - 1)
+            if rankName and rankName ~= "" then
+                ranks[i - 1] = rankName -- Store ranks starting from index 0
+            end
         end
     end
+
+    -- Shift ranks to avoid the blank entry
+    if ranks[0] then
+        for i = #ranks, 1, -1 do
+            ranks[i] = ranks[i - 1]
+        end
+        ranks[0] = nil -- Remove the old Guildmaster entry
+    end
+
     return ranks
 end
 
@@ -43,10 +29,15 @@ function ns.guild:GetGuildMembersBySelectedRanks()
         for i = 1, GetNumGuildMembers() do
             local name, rank, rankIndex = GetGuildRosterInfo(i)
             name = name:match("([^%-]+)") -- Remove server name from player name
-            local normalizedIndex = self:NormalizeRankIndex(rankIndex)
-            if LootCouncilRandomizer.db.char.selectedRanks[normalizedIndex] then
+
+            -- Adjust rankIndex for the shift
+            if rankIndex > 0 then
+                rankIndex = rankIndex + 1
+            end
+
+            if LootCouncilRandomizer.db.char.selectedRanks[rankIndex] then
                 membersByRank[rank] = membersByRank[rank] or {}
-                table.insert(membersByRank[rank], {name = name, rankIndex = normalizedIndex})
+                table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
             end
         end
     end

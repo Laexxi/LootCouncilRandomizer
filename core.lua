@@ -2,8 +2,9 @@ local ADDON_NAME, ns = ...
 LootCouncilRandomizer = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
 
 function LootCouncilRandomizer:OnInitialize()
+    -- character specific db
     self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", {
-        char = { -- Use 'char' for character-specific profiles
+        char = {
             minimap = { hide = false },
             selectedRankIndex = 1,
             councilSize = 5,
@@ -32,7 +33,7 @@ function LootCouncilRandomizer:SetupOptions()
         },
     }
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
-    self.options = options -- Initialize self.options here
+    self.options = options 
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
 end
 

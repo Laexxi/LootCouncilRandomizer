@@ -1,17 +1,3 @@
---[[
-core.lua
-Main entry point for the LootCouncilRandomizer addon.
-Handles initialization, setup of options, and minimap button.
-
-Functions:
-- OnInitialize: Initializes the addon, sets up the database and options.
-- OnEnable: Registers events when the addon is enabled.
-- SetupOptions: Configures the addon options and integrates them with the WoW interface.
-- SetupMinimapButton: Sets up the minimap button with left and right-click functionalities.
-- UpdateGuildRoster: Updates the guild roster data.
-- ChatCommand: Handles custom chat commands for the addon.
-]]
-
 local ADDON_NAME, ns = ...
 LootCouncilRandomizer = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
 
@@ -24,7 +10,8 @@ function LootCouncilRandomizer:OnInitialize()
             councilPots = 1,
             statistics = {},
         }
-    })
+    }, true) -- 'true' ensures defaults are set
+
     self:SetupOptions()
     self:SetupMinimapButton()
     ns.config:UpdateGroupNames(self.db.char.councilPots or 1) -- Ensure group names are updated here
@@ -32,6 +19,7 @@ end
 
 function LootCouncilRandomizer:OnEnable()
     self:RegisterEvent("GUILD_ROSTER_UPDATE", "UpdateGuildRoster")
+    self:UpdateGuildRoster() -- Ensure initial guild roster update
 end
 
 function LootCouncilRandomizer:SetupOptions()

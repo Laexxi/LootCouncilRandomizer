@@ -7,19 +7,10 @@ function ns.guild:GetGuildRanks()
         for i = 1, GuildControlGetNumRanks() do
             local rankName = GuildControlGetRankName(i - 1)
             if rankName and rankName ~= "" then
-                ranks[i - 1] = rankName -- Store ranks starting from index 0
+                ranks[i] = rankName -- Store ranks starting from index 1
             end
         end
     end
-
-    -- Shift ranks to avoid the blank entry
-    if ranks[0] then
-        for i = #ranks, 1, -1 do
-            ranks[i] = ranks[i - 1]
-        end
-        ranks[0] = nil -- Remove the old Guildmaster entry
-    end
-
     return ranks
 end
 
@@ -28,16 +19,14 @@ function ns.guild:GetGuildMembersBySelectedRanks()
     if IsInGuild() then
         for i = 1, GetNumGuildMembers() do
             local name, rank, rankIndex = GetGuildRosterInfo(i)
-            name = name:match("([^%-]+)") -- Remove server name from player name
+            if name and rank and rankIndex then
+                name = name:match("([^%-]+)") -- Remove server name from player name
+                rankIndex = rankIndex + 1 -- Adjust rankIndex for the shift to start from 1
 
-            -- Adjust rankIndex for the shift
-            if rankIndex > 0 then
-                rankIndex = rankIndex + 1
-            end
-
-            if LootCouncilRandomizer.db.char.selectedRanks[rankIndex] then
-                membersByRank[rank] = membersByRank[rank] or {}
-                table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
+                if LootCouncilRandomizer.db.char.selectedRanks[rankIndex] then
+                    membersByRank[rank] = membersByRank[rank] or {}
+                    table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
+                end
             end
         end
     end

@@ -1,17 +1,3 @@
---[[
-config.lua
-Handles the configuration and settings for the LootCouncilRandomizer addon.
-Provides options for general settings and groups.
-
-Functions:
-- GetOptions: Returns the configuration options for the addon.
-- GetGroupOptions: Returns the options for naming the groups and selecting the number of members per group.
-- UpdateGroupNames: Updates group names and their selection options based on the number of groups.
-- ImportAllRanks: Imports all guild ranks and updates the rank selection.
-- AdjustGroupSelection: Adjusts group selection numbers to ensure the total does not exceed the maximum council size.
-- ClampGroupSelections: Ensures group selections are within the bounds of the council size.
-]]
-
 local ADDON_NAME, ns = ...
 ns.config = {}
 
@@ -99,7 +85,7 @@ function ns.config:GetOptions()
                 type = "execute",
                 name = "Save Settings",
                 func = function()
-                    print("Settings saved.")
+                    print("LCR: Settings saved.")
                 end,
                 order = 3,
             },

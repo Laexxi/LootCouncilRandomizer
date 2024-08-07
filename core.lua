@@ -10,16 +10,15 @@ function LootCouncilRandomizer:OnInitialize()
             councilPots = 1,
             statistics = {},
         }
-    }, true) -- 'true' ensures defaults are set
+    }, true)
 
     self:SetupOptions()
     self:SetupMinimapButton()
-    ns.config:UpdateGroupNames(self.db.char.councilPots or 1) -- Ensure group names are updated here
-end
+    ns.config:UpdateGroupNames(self.db.char.councilPots or 1)
 
 function LootCouncilRandomizer:OnEnable()
     self:RegisterEvent("GUILD_ROSTER_UPDATE", "UpdateGuildRoster")
-    self:UpdateGuildRoster() -- Ensure initial guild roster update
+    self:UpdateGuildRoster()
 end
 
 function LootCouncilRandomizer:SetupOptions()
@@ -36,8 +35,7 @@ function LootCouncilRandomizer:SetupOptions()
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
     self.options = options
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
-    ns.config:UpdateGroupNames(self.db.char.councilPots or 1) -- Ensure group names are updated after setting up options
-end
+    ns.config:UpdateGroupNames(self.db.char.councilPots or 1) 
 
 function LootCouncilRandomizer:SetupMinimapButton()
     local ldb = LibStub("LibDataBroker-1.1"):NewDataObject(ADDON_NAME, {

@@ -22,7 +22,6 @@ function ns.statistics:GetOptions()
                 type = "execute",
                 name = "Reset Statistics",
                 func = function()
-                    -- Logic to reset statistics
                     LootCouncilRandomizer.db.profile.statistics = {}
                     print("Statistics reset.")
                 end,

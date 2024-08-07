@@ -7,7 +7,7 @@ function ns.guild:GetGuildRanks()
         for i = 1, GuildControlGetNumRanks() do
             local rankName = GuildControlGetRankName(i - 1)
             if rankName and rankName ~= "" then
-                ranks[i] = rankName -- Store ranks starting from index 1
+                ranks[i] = rankName
             end
         end
     end
@@ -20,8 +20,8 @@ function ns.guild:GetGuildMembersBySelectedRanks()
         for i = 1, GetNumGuildMembers() do
             local name, rank, rankIndex = GetGuildRosterInfo(i)
             if name and rank and rankIndex then
-                name = name:match("([^%-]+)") -- Remove server name from player name
-                rankIndex = rankIndex + 1 -- Adjust rankIndex for the shift to start from 1
+                name = name:match("([^%-]+)")
+                rankIndex = rankIndex + 1
 
                 if LootCouncilRandomizer.db.char.selectedRanks[rankIndex] then
                     membersByRank[rank] = membersByRank[rank] or {}
@@ -80,7 +80,7 @@ function ns.guild:UpdateGuildRosterOptions()
                 for i = 1, (LootCouncilRandomizer.db.char.councilPots or 1) do
                     groups[i] = LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i
                 end
-                groups[0] = "None" -- Option to remove group
+                groups[0] = "None"
                 return groups
             end,
             get = function(info)
@@ -92,10 +92,10 @@ function ns.guild:UpdateGuildRosterOptions()
                 else
                     LootCouncilRandomizer.db.char["rankGroup_" .. rank] = value
                 end
-                ns.guild:UpdateGuildRoster() -- Update the roster when the group is changed
+                ns.guild:UpdateGuildRoster()
             end,
             order = orderCounter,
-            width = "full", -- Make it take the full width
+            width = "full",
         }
         orderCounter = orderCounter + 1
 
@@ -109,7 +109,7 @@ function ns.guild:UpdateGuildRosterOptions()
                     for i = 1, (LootCouncilRandomizer.db.char.councilPots or 1) do
                         groups[i] = LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i
                     end
-                    groups[0] = "None" -- Option to remove group
+                    groups[0] = "None"
                     return groups
                 end,
                 get = function(info)

@@ -118,7 +118,7 @@ function ns.config:GetGroupOptions()
             name = "Number of members selected from " .. (LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i),
             desc = "Set the number of members selected from " .. (LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i),
             min = 0,
-            max = councilSize, -- Clamp to council size
+            max = councilSize,
             step = 1,
             get = function(info)
                 return LootCouncilRandomizer.db.char["groupSelection" .. i] or 0
@@ -165,7 +165,7 @@ function ns.config:ClampGroupSelections(maxValue)
     end
 
     if total > maxValue then
-        ns.config:AdjustGroupSelection(1, maxValue) -- Start adjustment from the first group
+        ns.config:AdjustGroupSelection(1, maxValue) 
     end
 
     if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.groups then

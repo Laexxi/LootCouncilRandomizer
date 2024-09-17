@@ -5,7 +5,7 @@ function ns.guild:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
         for i = 1, GuildControlGetNumRanks() do
-            local rankName = GuildControlGetRankName(i - 1)
+            local rankName = GuildControlGetRankName(i)
             if rankName and rankName ~= "" then
                 ranks[i] = rankName
             end
@@ -14,127 +14,143 @@ function ns.guild:GetGuildRanks()
     return ranks
 end
 
-function ns.guild:GetGuildMembersBySelectedRanks()
-    local membersByRank = {}
+function ns.guild:GetMembersByRank(rankIndex)
+    local members = {}
     if IsInGuild() then
         for i = 1, GetNumGuildMembers() do
-            local name, rank, rankIndex = GetGuildRosterInfo(i)
-            if name and rank and rankIndex then
-                name = name:match("([^%-]+)")
-                rankIndex = rankIndex + 1
+            local name, _, rankIndexMember = GetGuildRosterInfo(i)
+            if rankIndexMember == rankIndex - 1 then
+                local shortName = Ambiguate(name, "short")
+                table.insert(members, shortName)
+            end
+        end
+        table.sort(members)
+    end
+    return members
+end
 
-                if LootCouncilRandomizer.db.char.selectedRanks[rankIndex] then
-                    membersByRank[rank] = membersByRank[rank] or {}
-                    table.insert(membersByRank[rank], {name = name, rankIndex = rankIndex})
+function ns.guild:GetOptions()
+    local options = {
+        name = "Guild Overview",
+        type = "group",
+        args = {},
+    }
+
+    local selectedRanks = LootCouncilRandomizer.db.profile.settings.selectedRanks or {}
+    local guildRanks = ns.guild:GetGuildRanks()
+
+    for rankIndex, isSelected in pairs(selectedRanks) do
+        if isSelected and guildRanks[rankIndex] then
+            local rankName = guildRanks[rankIndex]
+            options.args["rank" .. rankIndex] = {
+                type = "group",
+                name = rankName,
+                inline = false,
+                args = {},
+            }
+
+            local members = ns.guild:GetMembersByRank(rankIndex)
+            if #members > 0 then
+                for i, memberName in ipairs(members) do
+                    options.args["rank" .. rankIndex].args["member" .. i] = {
+                        type = "description",
+                        name = memberName,
+                        order = i,
+                    }
+                end
+            else
+                options.args["rank" .. rankIndex].args["noMembers"] = {
+                    type = "description",
+                    name = "No members in this rank.",
+                    order = 1,
+                }
+            end
+        end
+    end
+
+    return options
+end
+
+function ns.guild:ShowGroupMembers()
+    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
+
+    for i = 1, groupCount do
+        local members = ns.guild:GetMembersByGroup(i)
+        if #members > 0 then
+            print("Group " .. i .. " members:", table.concat(members, ", "))
+        else
+            print("Group " .. i .. " has no members.")
+        end
+    end
+end
+
+function ns.guild:GetMembersByGroup(groupIndex)
+    local groupRanks = LootCouncilRandomizer.db.profile.settings["groupRanks" .. groupIndex]
+    local members = {}
+    local raidMembers = ns.guild:GetRaidMembers()
+
+    if IsInGuild() and IsInRaid() then
+        for i = 1, GetNumGuildMembers() do
+            local name, _, rankIndexMember = GetGuildRosterInfo(i)
+            rankIndexMember = rankIndexMember + 1
+
+            local shortName = Ambiguate(name, "short")
+            if groupRanks and groupRanks[rankIndexMember] and raidMembers[shortName] then
+                table.insert(members, shortName)
+            end
+        end
+    end
+
+    return members
+end
+
+function ns.guild:GetRaidMembers()
+    local raidMembers = {}
+    local numRaidMembers = GetNumGroupMembers()
+
+    if numRaidMembers > 0 and IsInRaid() then
+        for i = 1, numRaidMembers do
+            local name, _, _, _, _, _, _, online = GetRaidRosterInfo(i)
+            if name and online then 
+                name = Ambiguate(name, "short")
+                raidMembers[name] = true
+            end
+        end
+    end
+    return raidMembers
+end
+
+function ns.guild:GetRaidMembersWithRanks()
+    local raidMembers = {}
+    local numRaidMembers = GetNumGroupMembers()
+
+    if numRaidMembers > 0 and IsInRaid() then
+        for i = 1, numRaidMembers do
+            local name, _, _, _, _, _, _, online = GetRaidRosterInfo(i)
+            if name and online then 
+                name = Ambiguate(name, "short")
+                local guildIndex = ns.guild:GetGuildMemberIndexByName(name)
+                if guildIndex then
+                    local _, _, rankIndex = GetGuildRosterInfo(guildIndex)
+                    rankIndex = rankIndex + 1
+                    raidMembers[name] = rankIndex
                 end
             end
         end
     end
-    return membersByRank
+
+    return raidMembers
 end
 
-function ns.guild:GetOptions()
-    return {
-        name = "Guild Overview",
-        type = "group",
-        args = ns.guild:UpdateGuildRosterOptions()
-    }
-end
-
-function ns.guild:UpdateGuildRosterOptions()
-    local membersByRank = ns.guild:GetGuildMembersBySelectedRanks()
-    local args = {
-        updateButton = {
-            type = "execute",
-            name = "Update",
-            func = function()
-                ns.guild:UpdateGuildRoster()
-            end,
-            order = 0,
-        }
-    }
-    local orderCounter = 1
-    local sortedRanks = {}
-
-    for rank, members in pairs(membersByRank) do
-        table.insert(sortedRanks, {rank = rank, rankIndex = members[1].rankIndex})
-    end
-
-    table.sort(sortedRanks, function(a, b) return a.rankIndex < b.rankIndex end)
-
-    for _, rankInfo in ipairs(sortedRanks) do
-        local rank = rankInfo.rank
-        args["header_" .. rank] = {
-            type = "header",
-            name = rank,
-            order = orderCounter,
-        }
-        orderCounter = orderCounter + 1
-
-        args["group_" .. rank] = {
-            type = "select",
-            name = "Set group for " .. rank,
-            desc = "Assign a group to the entire rank of " .. rank,
-            values = function()
-                local groups = {}
-                for i = 1, (LootCouncilRandomizer.db.char.councilPots or 1) do
-                    groups[i] = LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i
-                end
-                groups[0] = "None"
-                return groups
-            end,
-            get = function(info)
-                return LootCouncilRandomizer.db.char["rankGroup_" .. rank] or 0
-            end,
-            set = function(info, value)
-                if value == 0 then
-                    LootCouncilRandomizer.db.char["rankGroup_" .. rank] = nil
-                else
-                    LootCouncilRandomizer.db.char["rankGroup_" .. rank] = value
-                end
-                ns.guild:UpdateGuildRoster()
-            end,
-            order = orderCounter,
-            width = "full",
-        }
-        orderCounter = orderCounter + 1
-
-        for i, member in ipairs(membersByRank[rank]) do
-            args[member.name] = {
-                type = "select",
-                name = member.name,
-                desc = "Assign a group to " .. member.name,
-                values = function()
-                    local groups = {}
-                    for i = 1, (LootCouncilRandomizer.db.char.councilPots or 1) do
-                        groups[i] = LootCouncilRandomizer.db.char["groupName" .. i] or "Group " .. i
-                    end
-                    groups[0] = "None"
-                    return groups
-                end,
-                get = function(info)
-                    return LootCouncilRandomizer.db.char["memberGroup_" .. member.name] or 0
-                end,
-                set = function(info, value)
-                    if value == 0 then
-                        LootCouncilRandomizer.db.char["memberGroup_" .. member.name] = nil
-                    else
-                        LootCouncilRandomizer.db.char["memberGroup_" .. member.name] = value
-                    end
-                end,
-                order = orderCounter,
-            }
-            orderCounter = orderCounter + 1
+function ns.guild:GetGuildMemberIndexByName(name)
+    if IsInGuild() then
+        for i = 1, GetNumGuildMembers() do
+            local guildName = GetGuildRosterInfo(i)
+            guildName = Ambiguate(guildName, "short")
+            if guildName == name then
+                return i
+            end
         end
     end
-
-    return args
-end
-
-function ns.guild:UpdateGuildRoster()
-    local rosterArgs = ns.guild:UpdateGuildRosterOptions()
-    if LootCouncilRandomizer.options then
-        LootCouncilRandomizer.options.args.guildroster.args = rosterArgs
-        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
-    end
+    return nil
 end

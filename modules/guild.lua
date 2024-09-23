@@ -31,35 +31,57 @@ end
 
 function ns.guild:GetOptions()
     local options = {
-        name = "Guild Overview",
+        name = "DEBUG",
         type = "group",
-        args = {},
+        childGroups = "tab",
+        hidden = function()
+            return not LootCouncilRandomizer.db.profile.settings.debugMode
+        end,
+        args = {
+            guildRanks = {
+                type = "group",
+                name = "Guild Ranks Overview",
+                order = 1,
+                args = self:GetGuildRanksOptions(),
+            },
+            currentGroups = {
+                type = "group",
+                name = "Current Groups Overview",
+                order = 2,
+                args = self:GetCurrentGroupsOptions(),
+            },
+        },
     }
 
+    return options
+end
+
+function ns.guild:GetGuildRanksOptions()
+    local options = {}
     local selectedRanks = LootCouncilRandomizer.db.profile.settings.selectedRanks or {}
     local guildRanks = ns.guild:GetGuildRanks()
 
     for rankIndex, isSelected in pairs(selectedRanks) do
         if isSelected and guildRanks[rankIndex] then
             local rankName = guildRanks[rankIndex]
-            options.args["rank" .. rankIndex] = {
+            options["rank" .. rankIndex] = {
                 type = "group",
                 name = rankName,
                 inline = false,
                 args = {},
             }
 
-            local members = ns.guild:GetMembersByRank(rankIndex)
+            local members = self:GetMembersByRank(rankIndex)
             if #members > 0 then
                 for i, memberName in ipairs(members) do
-                    options.args["rank" .. rankIndex].args["member" .. i] = {
+                    options["rank" .. rankIndex].args["member" .. i] = {
                         type = "description",
                         name = memberName,
                         order = i,
                     }
                 end
             else
-                options.args["rank" .. rankIndex].args["noMembers"] = {
+                options["rank" .. rankIndex].args["noMembers"] = {
                     type = "description",
                     name = "No members in this rank.",
                     order = 1,
@@ -70,6 +92,43 @@ function ns.guild:GetOptions()
 
     return options
 end
+
+function ns.guild:GetCurrentGroupsOptions()
+    local options = {}
+
+    local groupMembers = ns.randomizer:GetCurrentEligibleMembers()
+    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
+
+    for i = 1, groupCount do
+        local groupName = LootCouncilRandomizer.db.profile.settings["groupName" .. i] or "Group " .. i
+        options["group" .. i] = {
+            type = "group",
+            name = groupName,
+            inline = false,
+            args = {},
+        }
+
+        local members = groupMembers[i] or {}
+        if #members > 0 then
+            for j, memberName in ipairs(members) do
+                options["group" .. i].args["member" .. j] = {
+                    type = "description",
+                    name = memberName,
+                    order = j,
+                }
+            end
+        else
+            options["group" .. i].args["noMembers"] = {
+                type = "description",
+                name = "No eligible members in this group.",
+                order = 1,
+            }
+        end
+    end
+
+    return options
+end
+
 
 function ns.guild:ShowGroupMembers()
     local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1

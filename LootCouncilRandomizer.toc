@@ -1,4 +1,4 @@
-## Interface: 110000
+## Interface: 110002, 110005
 ## Title: LootCouncilRandomizer
 ## Author: Laexxi-Antonidas
 ## Version: 1.1
@@ -20,9 +20,10 @@ libs\LibGroupInSpecT-1.1\LibGroupInSpecT-1.1.lua
 modules\config.lua
 modules\guild.lua
 modules\randomizer.lua
+modules\statistics.lua
 core.lua
 
-#modules\statistics.lua
+
 #modules\sync.lua
 #localization\enUS.lua
 #localization\deDE.lua

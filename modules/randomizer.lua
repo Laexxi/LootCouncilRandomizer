@@ -131,3 +131,17 @@ function ns.randomizer:ParseCommaSeparatedList(inputString)
     end
     return list
 end
+
+function ns.randomizer:GetCurrentEligibleMembers()
+    local groupMembers = self:GetRaidMembersByGroup()
+    local eligibleGroupMembers = {}
+    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
+
+    for i = 1, groupCount do
+        local members = groupMembers[i] or {}
+        local eligibleMembers = self:FilterEligibleMembers(members, i)
+        eligibleGroupMembers[i] = eligibleMembers
+    end
+
+    return eligibleGroupMembers
+end

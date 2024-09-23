@@ -13,6 +13,7 @@ function LootCouncilRandomizer:OnInitialize()
                 reselectDuration = 0,
                 forcedPlayers = "",
                 excludedPlayers = "",
+                debugMode = false,
             },
             statistics = {},
         }
@@ -26,6 +27,7 @@ end
 function LootCouncilRandomizer:OnEnable()
     self:RegisterEvent("GUILD_ROSTER_UPDATE","UpdateGuildOverview")
     self:RegisterEvent("PLAYER_GUILD_UPDATE", "UpdateGuildOverview")
+    self:RegisterEvent("GROUP_ROSTER_UPDATE", "UpdateGuildOverview")
     self:RegisterChatCommand("lcr", "ChatCommand")
 end
 
@@ -38,6 +40,7 @@ function LootCouncilRandomizer:SetupOptions()
         args = {
             guildOverview = ns.guild:GetOptions(),
             settings = ns.config:GetOptions(),
+            history = ns.statistics:GetOptions(),
         },
     }
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)

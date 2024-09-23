@@ -12,39 +12,6 @@ function ns.config:GetOptions()
                 name = "General Settings",
                 order = 1,
                 args = {
-                    desc = {
-                        type = "description",
-                        name = "Settings for the Loot Council Randomizer.",
-                        order = 1,
-                    },
-                    importRanks = {
-                        type = "execute",
-                        name = "Import All Ranks",
-                        desc = "Import all guild ranks.",
-                        func = function()
-                            ns.config:ImportAllRanks()
-                        end,
-                        order = 2,
-                    },
-                    rankSelection = {
-                        type = "multiselect",
-                        name = "Select Ranks",
-                        desc = "Select the ranks to include.",
-                        values = function()
-                            return ns.guild:GetGuildRanks()
-                        end,
-                        get = function(info, key)
-                            return LootCouncilRandomizer.db.profile.settings.selectedRanks[key] or false
-                        end,
-                        set = function(info, key, value)
-                            LootCouncilRandomizer.db.profile.settings.selectedRanks[key] = value
-                            if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.guildOverview then
-                                LootCouncilRandomizer.options.args.guildOverview = ns.guild:GetOptions()
-                                LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
-                            end
-                        end,
-                        order = 3,
-                    },
                     councilSize = {
                         type = "range",
                         name = "Number of Council Members",
@@ -59,7 +26,7 @@ function ns.config:GetOptions()
                             LootCouncilRandomizer.db.profile.settings.councilSize = value
                             ns.config:ClampGroupSelections(value)
                         end,
-                        order = 4,
+                        order = 2,
                     },
                     councilPots = {
                         type = "range",
@@ -75,7 +42,7 @@ function ns.config:GetOptions()
                             LootCouncilRandomizer.db.profile.settings.councilPots = value
                             ns.config:UpdateGroupNames(value)
                         end,
-                        order = 5,
+                        order = 3,
                     },
                     reselectDuration = {
                         type = "range",
@@ -90,7 +57,29 @@ function ns.config:GetOptions()
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.reselectDuration = value
                         end,
-                        order = 6,
+                        order = 4,
+                    },
+                    selectStatisticsMode = {
+                        type = "toggle",
+                        name = "(TODO) Use Officer Notes",
+                        desc = "When selected the info, when the member was last selected, will be stored in the Officers note.",
+                        order = 98,
+                    },
+                    selectDebugMode = {
+                        type = "toggle",
+                        name = "Debug Settings",
+                        desc = "Show the Debug Settings to help to find bugs of the addon.",
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.debugMode or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.debugMode = value
+                            if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.settings then
+                                LootCouncilRandomizer.options.args.settings.args.debugSettings.hidden = not value
+                                LibStub("AceConfigRegistry-3.0"):NotifyChange("LootCouncilRandomizer")
+                            end
+                        end,
+                        order = 99,
                     },
                 },
             },
@@ -129,7 +118,72 @@ function ns.config:GetOptions()
                         end,
                         order = 2,
                     },
-                }
+                },
+            },
+            
+            syncSettings = {
+                type = "group",
+                name = "Sync Settings",
+                order = 4,
+                args = {
+                    
+                },
+            },
+            debugSettings = {
+                type = "group",
+                name = "Debug Settings",
+                order = 5,
+                hidden = function()
+                    return not LootCouncilRandomizer.db.profile.settings.debugMode
+                end,
+                args = {
+                    importRanks = {
+                        type = "execute",
+                        name = "Import All Ranks",
+                        desc = "Import all guild ranks.",
+                        func = function()
+                            ns.config:ImportAllRanks()
+                        end,
+                        order = 1,
+                    },
+                    rankSelection = {
+                        type = "multiselect",
+                        name = "Select Ranks",
+                        desc = "Select the ranks to include.",
+                        values = function()
+                            return ns.guild:GetGuildRanks()
+                        end,
+                        get = function(info, key)
+                            return LootCouncilRandomizer.db.profile.settings.selectedRanks[key] or false
+                        end,
+                        set = function(info, key, value)
+                            LootCouncilRandomizer.db.profile.settings.selectedRanks[key] = value
+                            if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.guildOverview then
+                                LootCouncilRandomizer.options.args.guildOverview = ns.guild:GetOptions()
+                                LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                            end
+                        end,
+                        order = 2,
+                    },
+                    debugMode = {
+                        type = "toggle",
+                        name = "(TODO)Ignore minimum Members",
+                        desc = "Enable the possibility to roll the council with less members as required.",
+                        order = 3,
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.ignoreMinMembers or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.ignoreMinMembers = value
+                        end,
+                    },
+                    enableLogging = {
+                        type = "toggle",
+                        name = "(TODO) Enable Logging",
+                        desc = "Enable the logging of the addon.",
+                        order = 4,
+                    },
+                },
             },
             saveSettings = {
                 type = "execute",
@@ -137,7 +191,7 @@ function ns.config:GetOptions()
                 func = function()
                     print("LCR: Settings saved.")
                 end,
-                order = 3,
+                order = 6,
             },
         },
     }
@@ -220,7 +274,6 @@ function ns.config:GetGroupOptions()
                         LootCouncilRandomizer.db.profile.settings["groupRanks" .. i][key] = value
                     end,
                     order = 4,
-                   
                 },
             },
         }
@@ -228,7 +281,6 @@ function ns.config:GetGroupOptions()
 
     return groupOptions
 end
-
 
 function ns.config:UpdateGroupNames(count)
     for i = 1, count do
@@ -262,7 +314,7 @@ function ns.config:ClampGroupSelections(maxValue)
     end
 
     if total > maxValue then
-        ns.config:AdjustGroupSelection(1, maxValue) 
+        ns.config:AdjustGroupSelection(1, maxValue)
     end
 
     if LootCouncilRandomizer.options and LootCouncilRandomizer.options.args.groups then

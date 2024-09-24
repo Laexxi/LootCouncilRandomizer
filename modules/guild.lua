@@ -2,16 +2,21 @@ local ADDON_NAME, ns = ...
 ns.guild = {}
 
 local logBuffer = ""
-local function AddToLog(message)
+function ns.guild:AddToLog(message)
     logBuffer = logBuffer .. message .. "\n"
 end
-local function ClearLog()
+
+function ns.guild:ClearLog()
     logBuffer = ""
 end
 
-local function DebugPrint(message)
+function ns.guild:GetLog()
+    return logBuffer
+end
+
+function ns.guild:DebugPrint(message)
     if LootCouncilRandomizer.db.profile.settings.debugMode then 
-        AddToLog(message)
+        ns.guild:AddToLog(message)
     end
 end
 
@@ -73,13 +78,12 @@ function ns.guild:GetOptions()
                         type = "input",
                         name = "Log Output",
                         desc = "Copy the log output here.",
-                        multiline = true,
+                        multiline = 20,
                         width = "full",
                         get = function(info)
                             return logBuffer
                         end,
                         set = function(info, value)
-                            -- Kein direkter Log-Eingriff erlaubt
                         end,
                         order = 1,
                     },

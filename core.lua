@@ -19,12 +19,14 @@ function LootCouncilRandomizer:OnInitialize()
         }
     }, true)
 
+    ns.guild:AddToLog("Addon initialized with settings: Council Size = " .. tostring(self.db.profile.settings.councilSize))
     self:SetupOptions()
     self:SetupMinimapButton()
     ns.config:UpdateGroupNames(self.db.profile.settings.councilPots or 1)
 end
 
 function LootCouncilRandomizer:OnEnable()
+    ns.guild:AddToLog("Addon enabled")
     self:RegisterEvent("GUILD_ROSTER_UPDATE","UpdateGuildOverview")
     self:RegisterEvent("PLAYER_GUILD_UPDATE", "UpdateGuildOverview")
     self:RegisterEvent("GROUP_ROSTER_UPDATE", "UpdateGuildOverview")
@@ -32,6 +34,7 @@ function LootCouncilRandomizer:OnEnable()
 end
 
 function LootCouncilRandomizer:SetupOptions()
+    ns.guild:AddToLog("Setting up options")
     local options = {
         name = ADDON_NAME,
         handler = LootCouncilRandomizer,

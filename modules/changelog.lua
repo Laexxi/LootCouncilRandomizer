@@ -18,6 +18,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.3.0|r",
+        "|cff00ff00- Added Logging.|r",
+        "",
         "|cffffd700Version 1.2.0|r",
         "|cff00ff00- Added Sync Settings tab.|r",
         "|cff00ff00- Added Changelog.|r",

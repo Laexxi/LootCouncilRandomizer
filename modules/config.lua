@@ -25,6 +25,7 @@ function ns.config:GetOptions()
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.councilSize = value
                             ns.config:ClampGroupSelections(value)
+                            ns.guild:AddToLog("Council size changed to " .. tostring(value))
                         end,
                         order = 2,
                     },
@@ -41,6 +42,7 @@ function ns.config:GetOptions()
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.councilPots = value
                             ns.config:UpdateGroupNames(value)
+                            ns.guild:AddToLog("Number of groups changed to " .. tostring(value))
                         end,
                         order = 3,
                     },
@@ -103,6 +105,7 @@ function ns.config:GetOptions()
                         end,
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.forcedPlayers = value
+                            ns.guild:AddToLog("Forced players updated: " .. value)
                         end,
                         order = 1,
                     },
@@ -115,6 +118,7 @@ function ns.config:GetOptions()
                         end,
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.excludedPlayers = value
+                            ns.guild:AddToLog("Excluded players updated: " .. value)
                         end,
                         order = 2,
                     },
@@ -215,6 +219,11 @@ function ns.config:GetOptions()
                     return not LootCouncilRandomizer.db.profile.settings.debugMode
                 end,
                 args = {
+                    importRanksDescription = {
+                        type = "description",
+                        name = "This will import all guild ranks and is only relevant for the 'DEBUG' tab.",
+                        order = 0,
+                    },
                     importRanks = {
                         type = "execute",
                         name = "Import All Ranks",
@@ -271,9 +280,6 @@ function ns.config:GetOptions()
     return options
 end
 
-function ns.config:AddToLog(message)
-    DebugPrint(message)
-end
 
 function ns.config:GetGroupOptions()
     local groupOptions = {}
@@ -433,6 +439,7 @@ end
 
 function ns.config:ImportAllRanks()
     local ranks = ns.guild:GetGuildRanks()
+    ns.guild:AddToLog("Importing all guild ranks")
     for key, _ in pairs(ranks) do
         LootCouncilRandomizer.db.profile.settings.selectedRanks[key] = true
     end

@@ -2,6 +2,7 @@ local ADDON_NAME, ns = ...
 ns.randomizer = {}
 
 function ns.randomizer:RandomizeCouncil()
+    ns.guild:AddToLog("Started council randomization")
     local councilMembers = {}
     local groupMembers = ns.randomizer:GetRaidMembersByGroup()
     local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
@@ -15,18 +16,21 @@ function ns.randomizer:RandomizeCouncil()
             local eligibleMembers = ns.randomizer:FilterEligibleMembers(members, i)
 
             if #eligibleMembers >= numToSelect then
+                ns.guild:AddToLog("Selecting " .. numToSelect .. " members from " .. groupName)
                 local selectedMembers = ns.randomizer:SelectRandomMembers(eligibleMembers, numToSelect)
                 for _, member in ipairs(selectedMembers) do
                     table.insert(councilMembers, member)
                     ns.randomizer:UpdateSelectionHistory(member)
                 end
             else
-                print("Nicht genügend berechtigte Mitglieder in " .. groupName .. " um " .. numToSelect .. " Mitglieder auszuwählen.")
+                ns.guild:AddToLog("Not enough eligible members in " .. groupName)
+                print("Not enough eligible members in " .. groupName .. " to select " .. numToSelect .. " members.")
             end
         end
     end
 
     ns.randomizer:AnnounceCouncil(councilMembers)
+    ns.guild:AddToLog("Council randomization complete")
 end
 
 
@@ -70,6 +74,7 @@ function ns.randomizer:FilterEligibleMembers(members, groupIndex)
 end
 
 function ns.randomizer:UpdateSelectionHistory(member)
+    ns.guild:AddToLog("Updating selection history for " .. member)
     LootCouncilRandomizer.db.profile.statistics[member] = LootCouncilRandomizer.db.profile.statistics[member] or {}
     LootCouncilRandomizer.db.profile.statistics[member].lastSelectedTime = time()
     LootCouncilRandomizer.db.profile.statistics[member].timesSelected = (LootCouncilRandomizer.db.profile.statistics[member].timesSelected or 0) + 1
@@ -90,11 +95,14 @@ end
 
 function ns.randomizer:AnnounceCouncil(council)
     if #council > 0 then
+        ns.guild:AddToLog("Announcing council members to RAID")
         SendChatMessage("Selected Loot Council Members:", "RAID")
         for _, member in ipairs(council) do
             SendChatMessage(member, "RAID")
+            ns.guild:AddToLog("Announced member: " .. member)
         end
     else
+        ns.guild:AddToLog("No members selected for council")
         print("No members selected for the Loot Council.")
     end
 end

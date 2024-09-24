@@ -255,12 +255,6 @@ function ns.config:GetOptions()
                             LootCouncilRandomizer.db.profile.settings.ignoreMinMembers = value
                         end,
                     },
-                    enableLogging = {
-                        type = "toggle",
-                        name = "(TODO) Enable Logging",
-                        desc = "Enable the logging of the addon.",
-                        order = 4,
-                    },
                 },
             },
             saveSettings = {
@@ -275,6 +269,10 @@ function ns.config:GetOptions()
     }
 
     return options
+end
+
+function ns.config:AddToLog(message)
+    DebugPrint(message)
 end
 
 function ns.config:GetGroupOptions()

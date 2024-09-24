@@ -1,6 +1,20 @@
 local ADDON_NAME, ns = ...
 ns.guild = {}
 
+local logBuffer = ""
+local function AddToLog(message)
+    logBuffer = logBuffer .. message .. "\n"
+end
+local function ClearLog()
+    logBuffer = ""
+end
+
+local function DebugPrint(message)
+    if LootCouncilRandomizer.db.profile.settings.debugMode then 
+        AddToLog(message)
+    end
+end
+
 function ns.guild:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
@@ -49,6 +63,36 @@ function ns.guild:GetOptions()
                 name = "Current Groups Overview",
                 order = 2,
                 args = self:GetCurrentGroupsOptions(),
+            },
+            logOutputTab = {
+                type = "group",
+                name = "Log Output",
+                order = 3,
+                args = {
+                    logOutput = {
+                        type = "input",
+                        name = "Log Output",
+                        desc = "Copy the log output here.",
+                        multiline = true,
+                        width = "full",
+                        get = function(info)
+                            return logBuffer
+                        end,
+                        set = function(info, value)
+                            -- Kein direkter Log-Eingriff erlaubt
+                        end,
+                        order = 1,
+                    },
+                    clearLogButton = {
+                        type = "execute",
+                        name = "Clear Log",
+                        desc = "Clear the current log output.",
+                        func = function()
+                            ClearLog()
+                        end,
+                        order = 2,
+                    },
+                },
             },
         },
     }

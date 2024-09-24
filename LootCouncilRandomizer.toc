@@ -1,7 +1,7 @@
 ## Interface: 110002, 110005
 ## Title: LootCouncilRandomizer
 ## Author: Laexxi-Antonidas
-## Version: 1.1
+## Version: 1.2.0
 ## Notes: Helps with randomly selecting Council Members.
 ## SavedVariables: LootCouncilRandomizerDB, LootCouncilRandomizerGuildDB
 
@@ -11,6 +11,7 @@ modules\config.lua
 modules\guild.lua
 modules\randomizer.lua
 modules\statistics.lua
+modules\changelog.lua
 core.lua
 
 

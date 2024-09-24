@@ -41,8 +41,15 @@ function LootCouncilRandomizer:SetupOptions()
             guildOverview = ns.guild:GetOptions(),
             settings = ns.config:GetOptions(),
             history = ns.statistics:GetOptions(),
+            changelog = ns.changelog:GetOptions(),
         },
     }
+
+    options.args.guildOverview.order = 4
+    options.args.settings.order = 1       
+    options.args.history.order = 2    
+    options.args.changelog.order = 3
+
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
     self.options = options
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)

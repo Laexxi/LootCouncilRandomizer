@@ -63,8 +63,14 @@ function ns.config:GetOptions()
                     },
                     selectStatisticsMode = {
                         type = "toggle",
-                        name = "(TODO) Use Officer Notes",
+                        name = "Use Officer Notes",
                         desc = "When selected the info, when the member was last selected, will be stored in the Officers note.",
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.selectStatisticsMode or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.selectStatisticsMode = value
+                        end,
                         order = 98,
                     },
                     selectDebugMode = {
@@ -254,7 +260,7 @@ function ns.config:GetOptions()
                     },
                     debugMode = {
                         type = "toggle",
-                        name = "(TODO)Ignore minimum Members",
+                        name = "Ignore minimum Members",
                         desc = "Enable the possibility to roll the council with less members as required.",
                         order = 3,
                         get = function(info)

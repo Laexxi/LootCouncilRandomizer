@@ -27,13 +27,19 @@ function ns.statistics:GetOptions()
                     if next(stats) == nil then
                         return desc .. "No statistics available.\n"
                     end
-
+            
                     local guildMembers = ns.statistics:GetGuildMemberList()
-
+            
                     for member, data in pairs(stats) do
                         if guildMembers[member] then
                             local timesSelected = data.timesSelected or 0
-                            local lastSelected = data.lastSelected or "Never"
+                            local lastSelectedTime = data.lastSelectedTime
+                            local lastSelected
+                            if lastSelectedTime then
+                                lastSelected = date("%Y-%m-%d %H:%M:%S", lastSelectedTime)
+                            else
+                                lastSelected = "Never"
+                            end
                             desc = desc .. string.format("%s: Selected %d times, Last selected: %s\n", member, timesSelected, lastSelected)
                         end
                     end

@@ -18,6 +18,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.3.1|r",
+        "|cff00ff00- Bugfix: Statistics always showed 'never'.|r",
+        "",
         "|cffffd700Version 1.3.0|r",
         "|cff00ff00- Added Logging.|r",
         "",

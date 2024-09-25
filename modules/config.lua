@@ -155,7 +155,6 @@ function ns.config:GetOptions()
                     end,
                     set = function(info, value)
                         LootCouncilRandomizer.db.profile.settings.syncTo = value
-                        -- Aktualisiere die Anzeige, wenn "Player" ausgewählt wird
                         if LootCouncilRandomizer.options then
                             LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
                         end
@@ -199,7 +198,6 @@ function ns.config:GetOptions()
                     name = "Sync Settings",
                     desc = "Synchronize settings now.",
                     func = function()
-                        -- Hier kannst du später die Synchronisationsfunktion hinzufügen
                         print("Sync Settings button clicked.")
                     end,
                     order = 6,
@@ -209,7 +207,6 @@ function ns.config:GetOptions()
                     name = "Sync Statistics",
                     desc = "Synchronize statistics now.",
                     func = function()
-                        -- Hier kannst du später die Synchronisationsfunktion hinzufügen
                         print("Sync Statistics button clicked.")
                     end,
                     order = 7,

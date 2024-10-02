@@ -18,6 +18,13 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.4.2|r",
+        "|cff00ff00- Prepare addition of Sync Settings.|r",
+        "|cff00ff00- Prepare addition of Curated Mode and Show forced Players.|r",
+        "",
+        "|cffffd700Version 1.4.1|r",
+        "|cff00ff00- Bugfixes.|r",
+        "",
         "|cffffd700Version 1.4.0|r",
         "|cff00ff00- Add possibility to set Timestamp in Officer Note.|r",
         "|cff00ff00- Add possibility to Debug Council roll and ignote min Members.|r",

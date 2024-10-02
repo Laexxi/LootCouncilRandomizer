@@ -61,6 +61,20 @@ function ns.config:GetOptions()
                         end,
                         order = 4,
                     },
+                    selectShowForced = {
+                        type = "toggle",
+                        name = "(TODO) Show forced Players",
+                        desc = "Shows if a player is forced on the council.",
+                        
+                        order = 5,
+                    },
+                    selectCuratedMode = {
+                        type = "toggle",
+                        name = "(TODO) Activate Curated Mode",
+                        desc = "When you activate this, you can reroll singel selections of the council before posting in raidchat.",
+                        
+                        order = 5,
+                    },
                     selectStatisticsMode = {
                         type = "toggle",
                         name = "Use Officer Notes",
@@ -89,6 +103,7 @@ function ns.config:GetOptions()
                         end,
                         order = 99,
                     },
+                    
                 },
             },
             groups = {
@@ -133,7 +148,7 @@ function ns.config:GetOptions()
             
             syncSettings = {
                 type = "group",
-                name = "Sync Settings",
+                name = "(TODO)Sync Settings",
                 order = 4,
                 args = {syncToDescription = {
                     type = "description",

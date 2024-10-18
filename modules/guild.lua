@@ -92,7 +92,7 @@ function ns.guild:GetOptions()
                         name = "Clear Log",
                         desc = "Clear the current log output.",
                         func = function()
-                            ClearLog()
+                            ns.guild:ClearLog()
                         end,
                         order = 2,
                     },
@@ -176,7 +176,6 @@ function ns.guild:GetCurrentGroupsOptions()
 
     return options
 end
-
 
 function ns.guild:ShowGroupMembers()
     local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1

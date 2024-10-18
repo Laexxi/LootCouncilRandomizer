@@ -61,13 +61,6 @@ function ns.config:GetOptions()
                         end,
                         order = 4,
                     },
-                    selectShowForced = {
-                        type = "toggle",
-                        name = "(TODO) Show forced Players",
-                        desc = "Shows if a player is forced on the council.",
-                        
-                        order = 5,
-                    },
                     selectCuratedMode = {
                         type = "toggle",
                         name = "(TODO) Activate Curated Mode",
@@ -111,39 +104,6 @@ function ns.config:GetOptions()
                 name = "Groups",
                 order = 2,
                 args = ns.config:GetGroupOptions(),
-            },
-            forcedPlayers = {
-                type = "group",
-                name = "Forced/Excluded Players",
-                order = 3,
-                args = {
-                    forcedList = {
-                        type = "input",
-                        name = "Forced Players",
-                        desc = "Enter player names separated by commas.",
-                        get = function(info)
-                            return LootCouncilRandomizer.db.profile.settings.forcedPlayers or ""
-                        end,
-                        set = function(info, value)
-                            LootCouncilRandomizer.db.profile.settings.forcedPlayers = value
-                            ns.guild:AddToLog("Forced players updated: " .. value)
-                        end,
-                        order = 1,
-                    },
-                    excludedList = {
-                        type = "input",
-                        name = "Excluded Players",
-                        desc = "Enter player names separated by commas.",
-                        get = function(info)
-                            return LootCouncilRandomizer.db.profile.settings.excludedPlayers or ""
-                        end,
-                        set = function(info, value)
-                            LootCouncilRandomizer.db.profile.settings.excludedPlayers = value
-                            ns.guild:AddToLog("Excluded players updated: " .. value)
-                        end,
-                        order = 2,
-                    },
-                },
             },
             
             syncSettings = {

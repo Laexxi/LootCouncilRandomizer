@@ -59,30 +59,9 @@ function ns.randomizer:FilterEligibleMembers(members, groupIndex)
     local eligibleMembers = {}
     local currentTime = time()
     local reselectDuration = LootCouncilRandomizer.db.profile.settings["groupReselectDuration" .. groupIndex] or LootCouncilRandomizer.db.profile.settings.reselectDuration or 0
-    local forcedPlayers = {}
-    local excludedPlayers = {}
-
-    if LootCouncilRandomizer.db.profile.settings.forcedPlayers and LootCouncilRandomizer.db.profile.settings.forcedPlayers ~= "" then
-        for name in string.gmatch(LootCouncilRandomizer.db.profile.settings.forcedPlayers, '([^,]+)') do
-            forcedPlayers[strtrim(name)] = true
-        end
-    end
-
-    if LootCouncilRandomizer.db.profile.settings.excludedPlayers and LootCouncilRandomizer.db.profile.settings.excludedPlayers ~= "" then
-        for name in string.gmatch(LootCouncilRandomizer.db.profile.settings.excludedPlayers, '([^,]+)') do
-            excludedPlayers[strtrim(name)] = true
-        end
-    end
-
     for _, member in ipairs(members) do
         local isEligible = true
-
-        if excludedPlayers[member] then
-            isEligible = false
-            ns.guild:DebugPrint(member .. " is excluded")
-        end
-
-        if isEligible and not forcedPlayers[member] and reselectDuration > 0 then
+        if isEligible and reselectDuration > 0 then
             local lastSelectedTime = 0
             if LootCouncilRandomizer.db.profile.settings.selectStatisticsMode then
                 lastSelectedTime = ns.randomizer:GetTimestampFromOfficerNote(member)
@@ -97,11 +76,6 @@ function ns.randomizer:FilterEligibleMembers(members, groupIndex)
             end
         end
 
-        if forcedPlayers[member] then
-            isEligible = true
-            ns.guild:DebugPrint(member .. " is forced and thus eligible")
-        end
-
         if isEligible then
             table.insert(eligibleMembers, member)
             ns.guild:DebugPrint(member .. " is eligible")
@@ -112,6 +86,7 @@ function ns.randomizer:FilterEligibleMembers(members, groupIndex)
 
     return eligibleMembers
 end
+
 
 
 function ns.randomizer:UpdateSelectionHistory(member)

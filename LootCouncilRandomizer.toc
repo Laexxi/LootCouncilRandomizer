@@ -1,7 +1,7 @@
 ## Interface: 110002, 110005
 ## Title: LootCouncilRandomizer
 ## Author: Laexxi-Antonidas
-## Version: 1.5.0
+## Version: 1.5.1
 ## Notes: Helps with randomly selecting Council Members.
 ## SavedVariables: LootCouncilRandomizerDB, LootCouncilRandomizerGuildDB
 

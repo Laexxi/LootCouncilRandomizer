@@ -260,3 +260,18 @@ function ns.guild:GetGuildMemberIndexByName(name)
     end
     return nil
 end
+
+function ns.guild:GetGuildMembersWithRanks()
+    local guildMembers = {}
+    if IsInGuild() then
+        for i = 1, GetNumGuildMembers() do
+            local name, _, rankIndex = GetGuildRosterInfo(i)
+            if name then
+                name = Ambiguate(name, "short")
+                rankIndex = rankIndex + 1 -- Lua indiziert ab 1
+                guildMembers[name] = rankIndex
+            end
+        end
+    end
+    return guildMembers
+end

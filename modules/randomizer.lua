@@ -9,6 +9,14 @@ function ns.randomizer:RandomizeCouncil()
 
     local debugMode = LootCouncilRandomizer.db.profile.settings.debugMode
     local ignoreMinMembers = LootCouncilRandomizer.db.profile.settings.ignoreMinMembers and debugMode
+    local debugTestMode = LootCouncilRandomizer.db.profile.settings.debugTestMode and debugMode
+
+    if debugTestMode then
+        ns.guild:DebugPrint("Debug Test Mode is enabled. Getting members from guild.")
+        groupMembers = ns.randomizer:GetGuildMembersByGroup()
+    else
+        groupMembers = ns.randomizer:GetRaidMembersByGroup()
+    end
 
     for i = 1, groupCount do
         local groupName = LootCouncilRandomizer.db.profile.settings["groupName" .. i] or "Group " .. i
@@ -28,7 +36,6 @@ function ns.randomizer:RandomizeCouncil()
                 else
                     ns.guild:DebugPrint("Not enough eligible members in " .. groupName)
                     print("Nicht genügend berechtigte Mitglieder in " .. groupName .. " um " .. numToSelect .. " Mitglieder auszuwählen.")
-                    -- Überspringe diese Gruppe
                     numToSelectActual = 0
                 end
             end
@@ -38,7 +45,7 @@ function ns.randomizer:RandomizeCouncil()
                 local selectedMembers = ns.randomizer:SelectRandomMembers(eligibleMembers, numToSelectActual)
                 for _, member in ipairs(selectedMembers) do
                     table.insert(councilMembers, member)
-                    if not ignoreMinMembers then
+                    if not ignoreMinMembers and not debugTestMode then
                         ns.randomizer:UpdateSelectionHistory(member)
                     else
                         ns.guild:DebugPrint("Skipping statistics update for " .. member)
@@ -52,16 +59,16 @@ function ns.randomizer:RandomizeCouncil()
     ns.guild:DebugPrint("Council randomization complete")
 end
 
-
-
-
 function ns.randomizer:FilterEligibleMembers(members, groupIndex)
     local eligibleMembers = {}
     local currentTime = time()
     local reselectDuration = LootCouncilRandomizer.db.profile.settings["groupReselectDuration" .. groupIndex] or LootCouncilRandomizer.db.profile.settings.reselectDuration or 0
+    local debugTestMode = LootCouncilRandomizer.db.profile.settings.debugTestMode and LootCouncilRandomizer.db.profile.settings.debugMode
+
     for _, member in ipairs(members) do
         local isEligible = true
-        if isEligible and reselectDuration > 0 then
+
+        if reselectDuration > 0 and not debugTestMode then
             local lastSelectedTime = 0
             if LootCouncilRandomizer.db.profile.settings.selectStatisticsMode then
                 lastSelectedTime = ns.randomizer:GetTimestampFromOfficerNote(member)
@@ -86,6 +93,7 @@ function ns.randomizer:FilterEligibleMembers(members, groupIndex)
 
     return eligibleMembers
 end
+
 
 
 
@@ -114,18 +122,30 @@ function ns.randomizer:SelectRandomMembers(group, count)
 end
 
 function ns.randomizer:AnnounceCouncil(council)
+    local debugTestMode = LootCouncilRandomizer.db.profile.settings.debugTestMode and LootCouncilRandomizer.db.profile.settings.debugMode
+
     if #council > 0 then
-        ns.guild:AddToLog("Announcing council members to RAID")
-        SendChatMessage("Selected Loot Council Members:", "RAID")
-        for _, member in ipairs(council) do
-            SendChatMessage(member, "RAID")
-            ns.guild:AddToLog("Announced member: " .. member)
+        if debugTestMode then
+            ns.guild:AddToLog("Announcing council members in test mode")
+            print("Selected Loot Council Members:")
+            for _, member in ipairs(council) do
+                print(member)
+                ns.guild:AddToLog("Test Mode - Announced member: " .. member)
+            end
+        else
+            ns.guild:AddToLog("Announcing council members")
+            SendChatMessage("Selected Loot Council Members:", "RAID")
+            for _, member in ipairs(council) do
+                SendChatMessage(member, "RAID")
+                ns.guild:AddToLog("Announced member: " .. member)
+            end
         end
     else
         ns.guild:AddToLog("No members selected for council")
         print("No members selected for the Loot Council.")
     end
 end
+
 
 function ns.randomizer:GetRaidMembersByGroup()
     local raidMembers = ns.guild:GetRaidMembersWithRanks()
@@ -221,4 +241,25 @@ function ns.randomizer:GetTimestampFromOfficerNote(member)
         ns.guild:DebugPrint("No officer note for " .. member)
         return 0
     end
+end
+
+function ns.randomizer:GetGuildMembersByGroup()
+    local guildMembers = ns.guild:GetGuildMembersWithRanks()
+    local groupMembers = {}
+    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
+
+    for i = 1, groupCount do
+        groupMembers[i] = {}
+    end
+
+    for name, rankIndex in pairs(guildMembers) do
+        for i = 1, groupCount do
+            local groupRanks = LootCouncilRandomizer.db.profile.settings["groupRanks" .. i] or {}
+            if groupRanks[rankIndex] then
+                table.insert(groupMembers[i], name)
+                break
+            end
+        end
+    end
+    return groupMembers
 end

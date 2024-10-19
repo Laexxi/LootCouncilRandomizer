@@ -242,6 +242,18 @@ function ns.config:GetOptions()
                             LootCouncilRandomizer.db.profile.settings.ignoreMinMembers = value
                         end,
                     },
+                    debugTestMode = {
+                        type = "toggle",
+                        name = "Simulate Council Roll without Raid",
+                        desc = "When enabled, you can roll the council from all possible members without being in a raid. This will not update statistics or dates.",
+                        order = 4,
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.debugTestMode or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.debugTestMode = value
+                        end,
+                    }
                 },
             },
             saveSettings = {

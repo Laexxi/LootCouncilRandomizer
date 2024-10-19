@@ -12,6 +12,8 @@ function LootCouncilRandomizer:OnInitialize()
                 councilPots = 2,
                 reselectDuration = 0,
                 debugMode = false,
+                ignoreMinMembers = false,
+                debugTestMode = false,
             },
             statistics = {},
         }

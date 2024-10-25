@@ -23,7 +23,6 @@ function LootCouncilRandomizer:OnInitialize()
     ns.guild:AddToLog("Addon initialized with settings: Council Size = " .. tostring(self.db.profile.settings.councilSize))
     self:SetupOptions()
     self:SetupMinimapButton()
-    -- ns.sync:RegisterEvents()
     ns.config:UpdateGroupNames(self.db.profile.settings.councilPots or 1)
 end
 
@@ -45,7 +44,7 @@ function LootCouncilRandomizer:SetupOptions()
         args = {
             guildOverview = ns.guild:GetOptions(),
             settings = ns.config:GetOptions(),
-            sync = ns.sync:GetOptions(),
+            sync = ns.sync and ns.sync:GetOptions() or {},
             history = ns.statistics:GetOptions(),
             changelog = ns.changelog:GetOptions(),
         },
@@ -60,7 +59,7 @@ function LootCouncilRandomizer:SetupOptions()
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
     self.options = options
     self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(ADDON_NAME, ADDON_NAME)
-    ns.config:UpdateGroupNames(self.db.profile.settings.councilPots or 1) 
+    ns.config:UpdateGroupNames(self.db.profile.settings.councilPots or 1)
 end
 
 function LootCouncilRandomizer:SetupMinimapButton()
@@ -99,7 +98,6 @@ function LootCouncilRandomizer:ChatCommand(input)
         print("/lcr log - Opens or closes the log window.")
     end
 end
-
 
 function LootCouncilRandomizer:UpdateGuildOverview()
     if self.options and self.options.args.guildOverview then

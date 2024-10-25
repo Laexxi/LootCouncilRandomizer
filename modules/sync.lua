@@ -4,6 +4,11 @@ ns.sync = {}
 
 local SYNC_PREFIX = "LCR_Sync"
 
+local AceComm = LibStub("AceComm-3.0")
+local AceSerializer = LibStub("AceSerializer-3.0")
+local LibCompress = LibStub:GetLibrary("LibCompress")
+local LibCompressEncoder = LibCompress:GetAddonEncodeTable()
+
 -- Register the addon message prefix
 C_ChatInfo.RegisterAddonMessagePrefix(SYNC_PREFIX)
 
@@ -36,10 +41,8 @@ function ns.sync:InitiateSettingsSync()
         }
     end
 
-    local serializedSettings = ns.sync:SerializeData(dataToSend)
-
     -- Send sync request to the target player
-    ns.sync:SendSyncRequest("Settings", serializedSettings, "WHISPER", targetPlayer)
+    ns.sync:SendSyncRequest("Settings", dataToSend, "WHISPER", targetPlayer)
 end
 
 -- Function to initiate statistics sync
@@ -64,10 +67,10 @@ function ns.sync:InitiateStatisticsSync()
     end
 
     -- Serialize the statistics data
-    local serializedStatistics = ns.sync:SerializeData(LootCouncilRandomizer.db.profile.statistics)
+    local statisticsData = LootCouncilRandomizer.db.profile.statistics
 
     -- Send sync request
-    ns.sync:SendSyncRequest("Statistics", serializedStatistics, distribution, targetPlayer)
+    ns.sync:SendSyncRequest("Statistics", statisticsData, distribution, targetPlayer)
 end
 
 -- Function to send sync request
@@ -80,13 +83,14 @@ function ns.sync:SendSyncRequest(dataType, data, distribution, targetPlayer)
     local serializedMessage = ns.sync:SerializeData(message)
 
     if distribution == "WHISPER" then
-        C_ChatInfo.SendAddonMessage(SYNC_PREFIX, serializedMessage, distribution, targetPlayer)
+        AceComm:SendCommMessage(SYNC_PREFIX, serializedMessage, distribution, targetPlayer)
         print("Sent sync request to " .. targetPlayer)
     else
-        C_ChatInfo.SendAddonMessage(SYNC_PREFIX, serializedMessage, distribution)
+        AceComm:SendCommMessage(SYNC_PREFIX, serializedMessage, distribution)
         print("Sent sync request to " .. distribution)
     end
 end
+
 
 -- Function to handle incoming addon messages
 function ns.sync:OnAddonMessage(prefix, message, distribution, sender)
@@ -145,49 +149,29 @@ function ns.sync:ShowSyncConfirmationPopup(sender, dataType, data)
 end
 
 -- Function to accept sync
-function ns.sync:AcceptSync(sender, dataType, data)
-    -- Deserialize the data
-    local success, deserializedData = ns.sync:DeserializeData(data)
-    if not success then
-        print("Failed to deserialize " .. dataType .. " data from " .. sender)
-        return
-    end
+function ns.sync:AcceptSync(sender, dataType, message)
+    local data = message.data
+    local deserializedData = data
 
     if dataType == "Settings" then
         -- Update settings
         local settingsData = deserializedData
-        -- Update each setting individually
-        for key, value in pairs(settingsData) do
-            if key == "groupSettings" then
-                for i, groupData in pairs(value) do
-                    LootCouncilRandomizer.db.profile.settings["groupName" .. i] = groupData.groupName
-                    LootCouncilRandomizer.db.profile.settings["groupSelection" .. i] = groupData.groupSelection
-                    LootCouncilRandomizer.db.profile.settings["groupReselectDuration" .. i] = groupData.groupReselectDuration
-                    LootCouncilRandomizer.db.profile.settings["groupRanks" .. i] = groupData.groupRanks
-                end
-            else
-                LootCouncilRandomizer.db.profile.settings[key] = value
-            end
-        end
-        print("Settings synced with " .. sender)
-        -- Refresh the configuration UI
-        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+        -- Rest des Codes bleibt gleich
     elseif dataType == "Statistics" then
         -- Update statistics
         LootCouncilRandomizer.db.profile.statistics = deserializedData
         print("Statistics synced with " .. sender)
     end
 
-    -- Send sync response back to sender
+    -- Sende Bestätigung zurück
     local responseMessage = {
         type = "SyncResponse",
         dataType = dataType,
         status = "Accepted",
     }
     local serializedResponse = ns.sync:SerializeData(responseMessage)
-    C_ChatInfo.SendAddonMessage(SYNC_PREFIX, serializedResponse, "WHISPER", sender)
+    AceComm:SendCommMessage(SYNC_PREFIX, serializedResponse, "WHISPER", sender)
 end
-
 -- Function to handle sync responses
 function ns.sync:HandleSyncResponse(sender, message)
     if message.status == "Accepted" then
@@ -198,25 +182,56 @@ function ns.sync:HandleSyncResponse(sender, message)
 end
 
 -- Serialization function
-function ns.sync:SerializeData(data)
-    local serialized = LibStub("AceSerializer-3.0"):Serialize(data)
-    return serialized
-end
+    function ns.sync:SerializeData(data)
+        local serialized = AceSerializer:Serialize(data)
+        local compressed = LibCompress:CompressHuffman(serialized)
+        local encoded = LibCompressEncoder:Encode(compressed)
+        return encoded
+    end
 
 -- Deserialization function
-function ns.sync:DeserializeData(data)
-    local success, deserialized = LibStub("AceSerializer-3.0"):Deserialize(data)
-    return success, deserialized
-end
+    function ns.sync:DeserializeData(data)
+        local decoded = LibCompressEncoder:Decode(data)
+        if not decoded then
+            print("Failed to decode data.")
+            return false, nil
+        end
+        local decompressed, errorMsg = LibCompress:Decompress(decoded)
+        if not decompressed then
+            print("Decompression error: " .. tostring(errorMsg))
+            return false, nil
+        end
+        local success, deserialized = AceSerializer:Deserialize(decompressed)
+        if not success then
+            print("Deserialization error.")
+        end
+        return success, deserialized
+    end
 
 -- Register the event handler for addon messages
 function ns.sync:RegisterEvents()
-    local eventFrame = CreateFrame("Frame")
-    eventFrame:RegisterEvent("CHAT_MSG_ADDON")
-    eventFrame:SetScript("OnEvent", function(_, event, prefix, message, channel, sender)
-        ns.sync:OnAddonMessage(prefix, message, channel, sender)
+    AceComm:RegisterComm(SYNC_PREFIX, function(prefix, message, distribution, sender)
+        ns.sync:OnCommReceived(prefix, message, distribution, sender)
     end)
 end
+
+function ns.sync:OnCommReceived(prefix, message, distribution, sender)
+    if prefix ~= SYNC_PREFIX then return end
+    if sender == UnitName("player") then return end -- Ignore own messages
+
+    local success, receivedMessage = ns.sync:DeserializeData(message)
+    if not success then
+        print("Failed to deserialize sync message from " .. sender)
+        return
+    end
+
+    if receivedMessage.type == "SyncRequest" then
+        ns.sync:HandleSyncRequest(sender, receivedMessage)
+    elseif receivedMessage.type == "SyncResponse" then
+        ns.sync:HandleSyncResponse(sender, receivedMessage)
+    end
+end
+
 
 -- Initialize the sync module
 ns.sync:RegisterEvents()

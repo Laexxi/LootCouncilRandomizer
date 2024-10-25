@@ -13,7 +13,6 @@ function ns.statistics:GetOptions()
                 confirm = true,
                 confirmText = "Are you sure you want to reset all statistics?",
                 func = function()
-                    -- Sicherheitsabfrage einbauen
                     StaticPopupDialogs["CONFIRM_RESET_STATS"] = {
                         text = "Are you sure you want to reset all statistics? This action cannot be undone.",
                         button1 = "Yes",
@@ -46,7 +45,11 @@ end
 
 function ns.statistics:ShowStatisticsWindow()
     if self.statsWindow then
-        self.statsWindow:Show()
+        if self.statsWindow:IsShown() then
+            self.statsWindow:Hide()
+        else
+            self.statsWindow:Show()
+        end
         return
     end
 

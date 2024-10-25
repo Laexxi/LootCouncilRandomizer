@@ -26,6 +26,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.6.0|r",
+        "|cff00ff00- Added sync functionality.|r",
+        "",
         "|cffffd700Version 1.5.2|r",
         "|cff00bfff- Redesign of Statistics window.|r",
         "|cff00bfff- Redesign of Sync window.|r",

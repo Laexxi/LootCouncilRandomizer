@@ -10,6 +10,9 @@ function ns.randomizer:RandomizeCouncil()
     local debugMode = LootCouncilRandomizer.db.profile.settings.debugMode
     local ignoreMinMembers = LootCouncilRandomizer.db.profile.settings.ignoreMinMembers and debugMode
     local debugTestMode = LootCouncilRandomizer.db.profile.settings.debugTestMode and debugMode
+    if LootCouncilRandomizer.db.profile.settings.syncWhenRolling then
+        ns.sync:InitiateStatisticsSync()
+    end
 
     if debugTestMode then
         ns.guild:DebugPrint("Debug Test Mode is enabled. Getting members from guild.")

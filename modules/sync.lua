@@ -9,6 +9,169 @@ local AceSerializer = LibStub("AceSerializer-3.0")
 local LibCompress = LibStub:GetLibrary("LibCompress")
 local LibCompressEncoder = LibCompress:GetAddonEncodeTable()
 
+function ns.sync:GetOptions()
+    local options = {
+        name = "Synchronization",
+        type = "group",
+        childGroups = "tab",
+        args = {
+            syncSettings = {
+                type = "group",
+                name = "Sync Settings",
+                order = 1,
+                args = {
+                    syncToDescription = {
+                        type = "description",
+                        name = "Sync to:",
+                        fontSize = "medium",
+                        order = 1,
+                    },
+                    syncToPlayerName = {
+                        type = "input",
+                        name = "Player Name",
+                        desc = "Enter the name of the player to sync with.",
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName or ""
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName = value
+                        end,
+                        order = 2,
+                        width = "normal",
+                    },
+                    targetPlayerButton = {
+                        type = "execute",
+                        name = "Use Target",
+                        desc = "Use the current target's name.",
+                        func = function()
+                            local targetName = UnitName("target")
+                            if targetName then
+                                LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName = targetName
+                                LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                            else
+                                print("No target selected.")
+                            end
+                        end,
+                        order = 3,
+                        width = "normal",
+                    },
+                    syncSettingsSpacer = {
+                        type = "description",
+                        name = " ",
+                        fontSize = "medium",
+                        order = 4,
+                        width = "full",
+                    },
+                    syncSettingsButton = {
+                        type = "execute",
+                        name = "Sync Settings",
+                        desc = "Synchronize settings now.",
+                        func = function()
+                            ns.sync:InitiateSettingsSync()
+                        end,
+                        order = 5,
+                        width = "normal",
+                    },
+                },
+            },
+            syncStatistics = {
+                type = "group",
+                name = "Sync Statistics",
+                order = 2,
+                args = {
+                    syncToDescription = {
+                        type = "description",
+                        name = "Sync to:",
+                        fontSize = "medium",
+                        order = 1,
+                    },
+                    syncTo = {
+                        type = "select",
+                        name = "",
+                        desc = "Select where to sync the data.",
+                        values = {
+                            guild = "Guild",
+                            raid = "Raid",
+                            player = "Player",
+                        },
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.syncTo or "guild"
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.syncTo = value
+                            if LootCouncilRandomizer.options then
+                                LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                            end
+                        end,
+                        order = 2,
+                        width = "half",
+                    },
+                    syncToPlayerName = {
+                        type = "input",
+                        name = "Player Name",
+                        desc = "Enter the name of the player to sync with.",
+                        hidden = function()
+                            return LootCouncilRandomizer.db.profile.settings.syncTo ~= "player"
+                        end,
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.syncToPlayerName or ""
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.syncToPlayerName = value
+                        end,
+                        order = 3,
+                        width = "normal",
+                    },
+                    targetPlayerButton = {
+                        type = "execute",
+                        name = "Use Target",
+                        desc = "Use the current target's name.",
+                        hidden = function()
+                            return LootCouncilRandomizer.db.profile.settings.syncTo ~= "player"
+                        end,
+                        func = function()
+                            local targetName = UnitName("target")
+                            if targetName then
+                                LootCouncilRandomizer.db.profile.settings.syncToPlayerName = targetName
+                                LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                            else
+                                print("No target selected.")
+                            end
+                        end,
+                        order = 4,
+                        width = "normal",
+                    },
+                    syncWhenRolling = {
+                        type = "toggle",
+                        name = "Sync when rolling council",
+                        desc = "Automatically sync statistics when rolling the council.",
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.syncWhenRolling or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.syncWhenRolling = value
+                        end,
+                        order = 5,
+                        width = "full",
+                    },
+                    syncStatisticsButton = {
+                        type = "execute",
+                        name = "Sync Statistics",
+                        desc = "Synchronize statistics now.",
+                        func = function()
+                            ns.sync:InitiateStatisticsSync()
+                        end,
+                        order = 6,
+                        width = "normal",
+                    },
+                },
+            },
+        },
+    }
+
+    return options
+end
+
 -- Register the addon message prefix
 C_ChatInfo.RegisterAddonMessagePrefix(SYNC_PREFIX)
 
@@ -22,6 +185,7 @@ function ns.sync:InitiateSettingsSync()
 
     -- Prepare the settings data to sync
     local settingsData = LootCouncilRandomizer.db.profile.settings
+    ns.guild:DebugPrint("Initiating settings sync to " .. targetPlayer)
     local dataToSend = {
         councilSize = settingsData.councilSize,
         councilPots = settingsData.councilPots,
@@ -80,6 +244,7 @@ function ns.sync:SendSyncRequest(dataType, data, distribution, targetPlayer)
         dataType = dataType,
         data = data,
     }
+    ns.guild:DebugPrint("Sending SyncRequest of type " .. dataType .. " to " .. (targetPlayer or distribution))
     local serializedMessage = ns.sync:SerializeData(message)
 
     if distribution == "WHISPER" then
@@ -112,6 +277,7 @@ end
 
 -- Function to handle sync requests
 function ns.sync:HandleSyncRequest(sender, message)
+    ns.guild:DebugPrint("Handling SyncRequest of type " .. message.dataType .. " from " .. sender)
     local dataType = message.dataType
     local data = message.data
 
@@ -150,6 +316,7 @@ end
 
 -- Function to accept sync
 function ns.sync:AcceptSync(sender, dataType, message)
+    ns.guild:DebugPrint("Accepting sync of type " .. dataType .. " from " .. sender)
     local data = message.data
     local deserializedData = data
 
@@ -216,6 +383,7 @@ function ns.sync:RegisterEvents()
 end
 
 function ns.sync:OnCommReceived(prefix, message, distribution, sender)
+    ns.guild:DebugPrint("Received message from " .. sender .. " via " .. distribution)
     if prefix ~= SYNC_PREFIX then return end
     if sender == UnitName("player") then return end -- Ignore own messages
 

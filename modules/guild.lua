@@ -4,7 +4,15 @@ ns.guild = {}
 local logBuffer = ""
 function ns.guild:AddToLog(message)
     logBuffer = logBuffer .. message .. "\n"
+    if self.editBox then
+        self.editBox:SetText(logBuffer)
+        self.editBox:HighlightText(0, 0)
+        self.editBox:SetCursorPosition(self.editBox:GetNumLetters())
+        self.editBox:ClearFocus()
+    end
 end
+
+
 
 function ns.guild:ClearLog()
     logBuffer = ""
@@ -73,30 +81,7 @@ function ns.guild:GetOptions()
                 type = "group",
                 name = "Log Output",
                 order = 3,
-                args = {
-                    logOutput = {
-                        type = "input",
-                        name = "Log Output",
-                        desc = "Copy the log output here.",
-                        multiline = 20,
-                        width = "full",
-                        get = function(info)
-                            return logBuffer
-                        end,
-                        set = function(info, value)
-                        end,
-                        order = 1,
-                    },
-                    clearLogButton = {
-                        type = "execute",
-                        name = "Clear Log",
-                        desc = "Clear the current log output.",
-                        func = function()
-                            ns.guild:ClearLog()
-                        end,
-                        order = 2,
-                    },
-                },
+                args = self:GetLogOptions(),
             },
         },
     }
@@ -275,3 +260,108 @@ function ns.guild:GetGuildMembersWithRanks()
     end
     return guildMembers
 end
+
+function ns.guild:CreateLogFrame()
+    if self.logFrame then return end
+
+    local frame = CreateFrame("Frame", "LootCouncilRandomizerLogFrame", UIParent, "BasicFrameTemplateWithInset")
+    frame:SetSize(500, 400)
+    frame:SetPoint("CENTER")
+    frame:SetFrameStrata("DIALOG")
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:SetClampedToScreen(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+
+    -- Titel setzen
+    frame.title = frame:CreateFontString(nil, "OVERLAY")
+    frame.title:SetFontObject("GameFontHighlightLarge")
+    frame.title:SetPoint("TOP", frame.TitleBg, "TOP", 0, -5)
+    frame.title:SetText("LootCouncilRandomizer Log")
+
+
+    -- ScrollFrame
+    local scrollFrame = CreateFrame("ScrollFrame", "LootCouncilRandomizerLogScrollFrame", frame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 15, -40)
+    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 45)
+
+    -- EditBox
+    local editBox = CreateFrame("EditBox", nil, scrollFrame)
+    editBox:SetMultiLine(true)
+    editBox:SetFontObject(ChatFontNormal)
+    editBox:SetWidth(scrollFrame:GetWidth())
+    editBox:SetAutoFocus(false)
+    editBox:EnableMouse(false)
+
+    scrollFrame:SetScrollChild(editBox)
+
+    -- Clear-Button
+    local clearButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    clearButton:SetSize(80, 22)
+    clearButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 15, 15)
+    clearButton:SetText("Clear")
+    clearButton:SetScript("OnClick", function()
+        ns.guild:ClearLog()
+        editBox:SetText("")
+    end)
+
+    self.logFrame = frame
+    self.editBox = editBox
+end
+
+function ns.guild:ShowLogFrame()
+    if not self.logFrame then
+        self:CreateLogFrame()
+    end
+    self.logFrame:Show()
+    -- Aktualisiere den Inhalt der EditBox
+    if self.editBox then
+        self.editBox:SetText(logBuffer)
+        self.editBox:HighlightText(0, 0)
+        self.editBox:SetCursorPosition(self.editBox:GetNumLetters())
+        self.editBox:ClearFocus()
+    end
+end
+
+function ns.guild:HideLogFrame()
+    if self.logFrame then
+        self.logFrame:Hide()
+    end
+end
+
+function ns.guild:ToggleLogFrame()
+    if self.logFrame and self.logFrame:IsShown() then
+        self:HideLogFrame()
+    else
+        self:ShowLogFrame()
+    end
+end
+
+function ns.guild:GetLogOptions()
+    local options = {
+        openLogWindowButton = {
+            type = "execute",
+            name = "Open Log Window",
+            desc = "Opens the log output window.",
+            func = function()
+                ns.guild:ShowLogFrame()
+            end,
+            order = 1,
+        },
+        clearLogButton = {
+            type = "execute",
+            name = "Clear Log",
+            desc = "Clear the current log output.",
+            func = function()
+                ns.guild:ClearLog()
+            end,
+            order = 2,
+        },
+    }
+
+    return options
+end
+
+

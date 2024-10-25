@@ -45,15 +45,17 @@ function LootCouncilRandomizer:SetupOptions()
         args = {
             guildOverview = ns.guild:GetOptions(),
             settings = ns.config:GetOptions(),
+            sync = ns.sync:GetOptions(),
             history = ns.statistics:GetOptions(),
             changelog = ns.changelog:GetOptions(),
         },
     }
 
-    options.args.guildOverview.order = 4
-    options.args.settings.order = 1       
-    options.args.history.order = 2    
-    options.args.changelog.order = 3
+    options.args.settings.order = 1
+    options.args.sync.order = 2
+    options.args.history.order = 3
+    options.args.changelog.order = 4
+    options.args.guildOverview.order = 5
 
     LibStub("AceConfig-3.0"):RegisterOptionsTable(ADDON_NAME, options)
     self.options = options
@@ -83,19 +85,21 @@ function LootCouncilRandomizer:SetupMinimapButton()
 end
 
 function LootCouncilRandomizer:ChatCommand(input)
-    if not input or input:trim() == "" or input:trim() == "open" then
+    local cmd = input:trim()
+    if cmd == "" or cmd == "open" then
         LibStub("AceConfigDialog-3.0"):Open(ADDON_NAME)
-    elseif input:trim() == "roll" then
+    elseif cmd == "roll" then
         ns.randomizer:RandomizeCouncil()
-    elseif input:trim() == "groups" then
-        ns.guild:ShowGroupMembers()
+    elseif cmd == "log" then
+        ns.guild:ToggleLogFrame()
     else
         print("Usage:")
         print("/lcr open - Opens the configuration window.")
         print("/lcr roll - Randomizes the council.")
-        print("/lcr groups - DEBUG: Shows members of the defined groups.")
+        print("/lcr log - Opens or closes the log window.")
     end
 end
+
 
 function LootCouncilRandomizer:UpdateGuildOverview()
     if self.options and self.options.args.guildOverview then

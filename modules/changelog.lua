@@ -16,7 +16,7 @@ function ns.changelog:GetOptions()
     return options
 end
 
--- Farblegende:
+-- Colours:
 
 -- |cffffd700 : Gold -> Titel and versionnumber
 -- |cff00ff00 : Green -> New Features
@@ -26,6 +26,12 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.5.2|r",
+        "|cff00bfff- Redesign of Statistics window.|r",
+        "|cff00bfff- Redesign of Sync window.|r",
+        "|cff00ff00- Added safety checks before resetting Statistics.|r",
+        "|cffff0000- Small Bugfixes and Typos.|r",
+        "",
         "|cffffd700Version 1.5.1|r",
         "|cff00ff00- Added possibility to simulate council roll without raid (Debugging).|r",
         "|cffff0000- Bugfixes.|r",

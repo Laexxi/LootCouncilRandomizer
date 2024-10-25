@@ -108,87 +108,166 @@ function ns.config:GetOptions()
             
             syncSettings = {
                 type = "group",
-                name = "(TODO)Sync Settings",
+                name = "Sync Settings",
                 order = 4,
-                args = {syncToDescription = {
-                    type = "description",
-                    name = "Sync to:",
-                    fontSize = "medium",
-                    order = 1,
-                },
-                syncTo = {
-                    type = "select",
-                    name = "",
-                    desc = "Select where to sync the data.",
-                    values = {
-                        guild = "Guild",
-                        raid = "Raid",
-                        player = "Player",
+                args = {
+                    settingsGroup = {
+                        type = "group",
+                        name = "Settings",
+                        inline = true,
+                        order = 1,
+                        args = {
+                            syncToDescription = {
+                                type = "description",
+                                name = "Sync to:",
+                                fontSize = "medium",
+                                order = 1,
+                            },
+                            syncToPlayerName = {
+                                type = "input",
+                                name = "Player Name",
+                                desc = "Enter the name of the player to sync with.",
+                                get = function(info)
+                                    return LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName or ""
+                                end,
+                                set = function(info, value)
+                                    LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName = value
+                                end,
+                                order = 2,
+                                width = "normal",
+                            },
+                            targetPlayerButton = {
+                                type = "execute",
+                                name = "Use Target",
+                                desc = "Use the current target's name.",
+                                func = function()
+                                    local targetName = UnitName("target")
+                                    if targetName then
+                                        LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName = targetName
+                                        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                                    else
+                                        print("No target selected.")
+                                    end
+                                end,
+                                order = 3,
+                                width = "normal",
+                            },
+                            syncSettingsSpacer = {
+                                type = "description",
+                                name = " ",
+                                fontSize = "medium",
+                                order = 4,
+                                width = "full",
+                            },
+                            syncSettingsButton = {
+                                type = "execute",
+                                name = "Sync Settings",
+                                desc = "Synchronize settings now.",
+                                func = function()
+                                    ns.sync:InitiateSettingsSync()
+                                end,
+                                order = 5,
+                                width = "normal",
+                            },
+                        },
                     },
-                    get = function(info)
-                        return LootCouncilRandomizer.db.profile.settings.syncTo or "guild"
-                    end,
-                    set = function(info, value)
-                        LootCouncilRandomizer.db.profile.settings.syncTo = value
-                        if LootCouncilRandomizer.options then
-                            LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
-                        end
-                    end,
-                    order = 2,
-                },
-                syncToPlayerName = {
-                    type = "input",
-                    name = "Player Name",
-                    desc = "Enter the name of the player to sync with.",
-                    hidden = function()
-                        return LootCouncilRandomizer.db.profile.settings.syncTo ~= "player"
-                    end,
-                    get = function(info)
-                        return LootCouncilRandomizer.db.profile.settings.syncToPlayerName or ""
-                    end,
-                    set = function(info, value)
-                        LootCouncilRandomizer.db.profile.settings.syncToPlayerName = value
-                    end,
-                    order = 3,
-                },
-                syncWhenRolling = {
-                    type = "toggle",
-                    name = "Sync when rolling council",
-                    desc = "Automatically sync settings when rolling the council.",
-                    get = function(info)
-                        return LootCouncilRandomizer.db.profile.settings.syncWhenRolling or false
-                    end,
-                    set = function(info, value)
-                        LootCouncilRandomizer.db.profile.settings.syncWhenRolling = value
-                    end,
-                    order = 4,
-                },
-                spacer = {
-                    type = "header",
-                    name = "",
-                    order = 5,
-                },
-                syncSettingsButton = {
-                    type = "execute",
-                    name = "Sync Settings",
-                    desc = "Synchronize settings now.",
-                    func = function()
-                        print("Sync Settings button clicked.")
-                    end,
-                    order = 6,
-                },
-                syncStatisticsButton = {
-                    type = "execute",
-                    name = "Sync Statistics",
-                    desc = "Synchronize statistics now.",
-                    func = function()
-                        print("Sync Statistics button clicked.")
-                    end,
-                    order = 7,
-                },
+                    statisticsGroup = {
+                        type = "group",
+                        name = "Statistics",
+                        inline = true,
+                        order = 2,
+                        args = {
+                            syncToDescription = {
+                                type = "description",
+                                name = "Sync to:",
+                                fontSize = "medium",
+                                order = 1,
+                            },
+                            syncTo = {
+                                type = "select",
+                                name = "",
+                                desc = "Select where to sync the data.",
+                                values = {
+                                    guild = "Guild",
+                                    raid = "Raid",
+                                    player = "Player",
+                                },
+                                get = function(info)
+                                    return LootCouncilRandomizer.db.profile.settings.syncTo or "guild"
+                                end,
+                                set = function(info, value)
+                                    LootCouncilRandomizer.db.profile.settings.syncTo = value
+                                    if LootCouncilRandomizer.options then
+                                        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                                    end
+                                end,
+                                order = 2,
+                                width = "half",
+                            },
+                            syncToPlayerName = {
+                                type = "input",
+                                name = "Player Name",
+                                desc = "Enter the name of the player to sync with.",
+                                hidden = function()
+                                    return LootCouncilRandomizer.db.profile.settings.syncTo ~= "player"
+                                end,
+                                get = function(info)
+                                    return LootCouncilRandomizer.db.profile.settings.syncToPlayerName or ""
+                                end,
+                                set = function(info, value)
+                                    LootCouncilRandomizer.db.profile.settings.syncToPlayerName = value
+                                end,
+                                order = 3,
+                                width = "normal",
+                            },
+                            targetPlayerButton = {
+                                type = "execute",
+                                name = "Use Target",
+                                desc = "Use the current target's name.",
+                                hidden = function()
+                                    return LootCouncilRandomizer.db.profile.settings.syncTo ~= "player"
+                                end,
+                                func = function()
+                                    local targetName = UnitName("target")
+                                    if targetName then
+                                        LootCouncilRandomizer.db.profile.settings.syncToPlayerName = targetName
+                                        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+                                    else
+                                        print("No target selected.")
+                                    end
+                                end,
+                                order = 4,
+                                width = "normal",
+                            },
+                            syncWhenRolling = {
+                                type = "toggle",
+                                name = "Sync when rolling council",
+                                desc = "Automatically sync statistics when rolling the council.",
+                                get = function(info)
+                                    return LootCouncilRandomizer.db.profile.settings.syncWhenRolling or false
+                                end,
+                                set = function(info, value)
+                                    LootCouncilRandomizer.db.profile.settings.syncWhenRolling = value
+                                end,
+                                order = 5,
+                                width = "full",
+                            },
+                            syncStatisticsButton = {
+                                type = "execute",
+                                name = "Sync Statistics",
+                                desc = "Synchronize statistics now.",
+                                func = function()
+                                    ns.sync:InitiateStatisticsSync()
+                                end,
+                                order = 6,
+                                width = "normal",
+                            },
+                        },
+                    },
                     
                 },
             },
+            
             debugSettings = {
                 type = "group",
                 name = "Debug Settings",

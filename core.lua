@@ -23,7 +23,7 @@ function LootCouncilRandomizer:OnInitialize()
     ns.guild:AddToLog("Addon initialized with settings: Council Size = " .. tostring(self.db.profile.settings.councilSize))
     self:SetupOptions()
     self:SetupMinimapButton()
-    ns.sync:RegisterEvents()
+    -- ns.sync:RegisterEvents()
     ns.config:UpdateGroupNames(self.db.profile.settings.councilPots or 1)
 end
 

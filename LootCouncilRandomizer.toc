@@ -6,9 +6,11 @@
 ## SavedVariables: LootCouncilRandomizerDB, LootCouncilRandomizerGuildDB
 
 embeds.xml
-
+utility\frame.lua
+utility\timestamp.lua
+utility\communication.lua
 modules\config.lua
-modules\guild.lua
+modules\debug.lua
 modules\randomizer.lua
 modules\statistics.lua
 modules\sync.lua

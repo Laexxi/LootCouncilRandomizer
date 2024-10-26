@@ -1,11 +1,13 @@
 local ADDON_NAME, ns = ...
 ns.sync = {}
+local module = ns.sync
+local AceComm = LibStub("AceComm-3.0")
+AceComm:Embed(module)
 
 local SYNC_PREFIX = "LCR_Sync"
 
-local AceSerializer = LibStub("AceSerializer-3.0")
-local LibCompress = LibStub:GetLibrary("LibCompress")
-local LibCompressEncoder = LibCompress:GetAddonEncodeTable()
+local utility = ns.utility
+local debug = ns.debug
 
 -- Nachrichtentypen
 local MESSAGE_TYPES = {
@@ -16,12 +18,12 @@ local MESSAGE_TYPES = {
     SYNC_COMPLETE = "SyncComplete",
 }
 
-function ns.sync:OnInitialize()
+function module:OnInitialize()
     self:RegisterEvents()
 end
 
-function ns.sync:GetOptions()
-    local options = {
+function module:GetOptions()
+    return {
         name = "Synchronization",
         type = "group",
         childGroups = "tab",
@@ -37,7 +39,7 @@ function ns.sync:GetOptions()
                         fontSize = "medium",
                         order = 1,
                     },
-                    syncToPlayerName = {
+                    syncSettingsPlayerName = {
                         type = "input",
                         name = "Player Name",
                         desc = "Enter the name of the player to sync with.",
@@ -78,7 +80,7 @@ function ns.sync:GetOptions()
                         name = "Sync Settings",
                         desc = "Synchronize settings now.",
                         func = function()
-                            self:InitiateSettingsSync()
+                            module:InitiateSettingsSync()
                         end,
                         order = 5,
                         width = "normal",
@@ -170,7 +172,7 @@ function ns.sync:GetOptions()
                         name = "Sync Statistics",
                         desc = "Synchronize statistics now.",
                         func = function()
-                            self:InitiateStatisticsSync()
+                            module:InitiateStatisticsSync()
                         end,
                         order = 6,
                         width = "normal",
@@ -179,11 +181,45 @@ function ns.sync:GetOptions()
             },
         },
     }
-
-    return options
 end
 
-function ns.sync:InitiateStatisticsSync()
+function module:RegisterEvents()
+    self:RegisterComm(SYNC_PREFIX, "OnCommReceived")
+end
+
+function module:InitiateSettingsSync()
+    local targetPlayer = LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName
+    if not targetPlayer or targetPlayer == "" then
+        print("Please specify a player name to sync settings with.")
+        return
+    end
+
+    -- Bereite die zu synchronisierenden Einstellungen vor
+    local dataToSend = LootCouncilRandomizer.db.profile.settings
+
+    -- Speichere die Daten in einer Tabelle, um später darauf zugreifen zu können
+    self.pendingSyncs = self.pendingSyncs or {}
+    self.pendingSyncs[targetPlayer] = {
+        dataType = "Settings",
+        data = dataToSend,
+    }
+
+    -- Sende SyncRequest
+    local message = {
+        type = MESSAGE_TYPES.SYNC_REQUEST,
+        dataType = "Settings",
+    }
+    local serializedMessage = utility:SerializeData(message)
+    if not serializedMessage then
+        debug:DebugPrint("Sync", "Failed to serialize SyncRequest for Settings")
+        return
+    end
+
+    self:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", targetPlayer)
+    debug:DebugPrint("Sync", "Sent SyncRequest to " .. targetPlayer)
+end
+
+function module:InitiateStatisticsSync()
     local syncTo = LootCouncilRandomizer.db.profile.settings.syncTo
     local targetPlayer
 
@@ -220,54 +256,30 @@ function ns.sync:InitiateStatisticsSync()
         type = MESSAGE_TYPES.SYNC_REQUEST,
         dataType = "Statistics",
     }
-    local serializedMessage = self:SerializeData(message)
+    local serializedMessage = utility:SerializeData(message)
 
-    if targetPlayer then
-        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", targetPlayer)
-        ns.guild:DebugPrint("Sent SyncRequest to " .. targetPlayer)
-    elseif syncTo == "guild" then
-        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "GUILD")
-        ns.guild:DebugPrint("Sent SyncRequest to GUILD")
-    elseif syncTo == "raid" then
-        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "RAID")
-        ns.guild:DebugPrint("Sent SyncRequest to RAID")
-    end
-end
-
-
-function ns.sync:InitiateSettingsSync()
-    local targetPlayer = LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName
-    if not targetPlayer or targetPlayer == "" then
-        print("Please specify a player name to sync settings with.")
+    if not serializedMessage then
+        debug:DebugPrint("Sync", "Failed to serialize SyncRequest for Statistics")
         return
     end
 
-    -- Bereite die zu synchronisierenden Einstellungen vor
-    local dataToSend = LootCouncilRandomizer.db.profile.settings
-
-    -- Speichere die Daten in einer Tabelle, um später darauf zugreifen zu können
-    self.pendingSyncs = self.pendingSyncs or {}
-    self.pendingSyncs[targetPlayer] = {
-        dataType = "Settings",
-        data = dataToSend,
-    }
-
-    -- Sende SyncRequest
-    local message = {
-        type = MESSAGE_TYPES.SYNC_REQUEST,
-        dataType = "Settings",
-    }
-    local serializedMessage = self:SerializeData(message)
-    self:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", targetPlayer)
-    ns.guild:DebugPrint("Sent SyncRequest to " .. targetPlayer)
+    if targetPlayer then
+        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", targetPlayer)
+        debug:DebugPrint("Sync", "Sent SyncRequest to " .. targetPlayer)
+    elseif syncTo == "guild" then
+        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "GUILD")
+        debug:DebugPrint("Sync", "Sent SyncRequest to GUILD")
+    elseif syncTo == "raid" then
+        self:SendCommMessage(SYNC_PREFIX, serializedMessage, "RAID")
+        debug:DebugPrint("Sync", "Sent SyncRequest to RAID")
+    end
 end
 
-
-function ns.sync:OnCommReceived(prefix, message, distribution, sender)
-    ns.guild:DebugPrint("Received message from " .. sender .. " via " .. distribution)
-    local success, receivedMessage = self:DeserializeData(message)
+function module:OnCommReceived(prefix, message, distribution, sender)
+    debug:DebugPrint("Sync", "Received message from " .. sender .. " via " .. distribution)
+    local success, receivedMessage = utility:DeserializeData(message)
     if not success then
-        ns.guild:DebugPrint("Failed to deserialize message from " .. sender)
+        debug:DebugPrint("Sync", "Failed to deserialize message from " .. sender)
         return
     end
 
@@ -282,14 +294,13 @@ function ns.sync:OnCommReceived(prefix, message, distribution, sender)
     elseif receivedMessage.type == MESSAGE_TYPES.SYNC_COMPLETE then
         self:HandleSyncComplete(sender, receivedMessage)
     else
-        ns.guild:DebugPrint("Unknown message type from " .. sender)
+        debug:DebugPrint("Sync", "Unknown message type from " .. sender)
     end
 end
 
-
-function ns.sync:HandleSyncRequest(sender, message)
+function module:HandleSyncRequest(sender, message)
     local dataType = message.dataType
-    ns.guild:DebugPrint("Received SyncRequest from " .. sender .. " for " .. dataType)
+    debug:DebugPrint("Sync", "Received SyncRequest from " .. sender .. " for " .. dataType)
 
     -- Prüfe, ob wir den Datentyp unterstützen
     if dataType ~= "Settings" and dataType ~= "Statistics" then
@@ -299,29 +310,50 @@ function ns.sync:HandleSyncRequest(sender, message)
             dataType = dataType,
             reason = "Unsupported data type",
         }
-        local serializedNack = self:SerializeData(nackMessage)
-        AceComm:SendCommMessage(SYNC_PREFIX, serializedNack, "WHISPER", sender)
+        local serializedNack = utility:SerializeData(nackMessage)
+        if serializedNack then
+            self:SendCommMessage(SYNC_PREFIX, serializedNack, "WHISPER", sender)
+            debug:DebugPrint("Sync", "Sent SyncNack to " .. sender .. " for unsupported data type " .. dataType)
+        else
+            debug:DebugPrint("Sync", "Failed to serialize SyncNack for " .. sender)
+        end
         return
     end
 
     -- Zeige Bestätigungspopup
-    self:ShowSyncConfirmationPopup(sender, dataType)
+    utility:CreatePopup(
+        "LCR_SYNC_CONFIRMATION",
+        sender .. " wants to sync " .. dataType .. " with you. Do you accept?",
+        "Accept",
+        "Decline",
+        function()
+            module:OnSyncAccept(sender, dataType)
+        end,
+        function()
+            module:OnSyncDecline(sender, dataType)
+        end
+    )
 end
 
-function ns.sync:OnSyncAccept(sender, dataType)
-    ns.guild:DebugPrint("Accepted sync request from " .. sender .. " for " .. dataType)
+function module:OnSyncAccept(sender, dataType)
+    debug:DebugPrint("Sync", "Accepted sync request from " .. sender .. " for " .. dataType)
 
     -- Sende SyncAck
     local ackMessage = {
         type = MESSAGE_TYPES.SYNC_ACK,
         dataType = dataType,
     }
-    local serializedAck = self:SerializeData(ackMessage)
-    AceComm:SendCommMessage(SYNC_PREFIX, serializedAck, "WHISPER", sender)
+    local serializedAck = utility:SerializeData(ackMessage)
+    if serializedAck then
+        self:SendCommMessage(SYNC_PREFIX, serializedAck, "WHISPER", sender)
+        debug:DebugPrint("Sync", "Sent SyncAck to " .. sender)
+    else
+        debug:DebugPrint("Sync", "Failed to serialize SyncAck for " .. sender)
+    end
 end
 
-function ns.sync:OnSyncDecline(sender, dataType)
-    ns.guild:DebugPrint("Declined sync request from " .. sender .. " for " .. dataType)
+function module:OnSyncDecline(sender, dataType)
+    debug:DebugPrint("Sync", "Declined sync request from " .. sender .. " for " .. dataType)
 
     -- Sende SyncNack
     local nackMessage = {
@@ -329,23 +361,28 @@ function ns.sync:OnSyncDecline(sender, dataType)
         dataType = dataType,
         reason = "User declined",
     }
-    local serializedNack = self:SerializeData(nackMessage)
-    AceComm:SendCommMessage(SYNC_PREFIX, serializedNack, "WHISPER", sender)
+    local serializedNack = utility:SerializeData(nackMessage)
+    if serializedNack then
+        self:SendCommMessage(SYNC_PREFIX, serializedNack, "WHISPER", sender)
+        debug:DebugPrint("Sync", "Sent SyncNack to " .. sender .. " for user declined")
+    else
+        debug:DebugPrint("Sync", "Failed to serialize SyncNack for " .. sender)
+    end
 end
 
-function ns.sync:HandleSyncAck(sender, message)
+function module:HandleSyncAck(sender, message)
     local dataType = message.dataType
-    ns.guild:DebugPrint("Received SyncAck from " .. sender .. " for " .. dataType)
+    debug:DebugPrint("Sync", "Received SyncAck from " .. sender .. " for " .. dataType)
 
     if not self.pendingSyncs then
-        ns.guild:DebugPrint("No pending syncs exist.")
+        debug:DebugPrint("Sync", "No pending syncs exist.")
         return
     end
 
     -- Hole die zu sendenden Daten
-    local syncInfo = self.pendingSyncs and self.pendingSyncs[sender]
+    local syncInfo = self.pendingSyncs[sender] or self.pendingSyncs[LootCouncilRandomizer.db.profile.settings.syncTo]
     if not syncInfo or syncInfo.dataType ~= dataType then
-        ns.guild:DebugPrint("No pending sync data for " .. sender)
+        debug:DebugPrint("Sync", "No pending sync data for " .. sender)
         return
     end
 
@@ -355,88 +392,64 @@ function ns.sync:HandleSyncAck(sender, message)
         dataType = dataType,
         data = syncInfo.data,
     }
-    local serializedData = self:SerializeData(dataMessage)
-    AceComm:SendCommMessage(SYNC_PREFIX, serializedData, "WHISPER", sender)
-    ns.guild:DebugPrint("Sent SyncData to " .. sender)
+
+    if not AceComm or not AceComm.SendCommMessage then
+        print("AceComm or SendCommMessage is not available.")
+        return
+    end
+    
+    print("Sending message:", SYNC_PREFIX, serializedData, "WHISPER", sender)
+    local serializedData = utility:SerializeData(dataMessage)
+    if serializedData then
+        AceComm:SendCommMessage(SYNC_PREFIX, serializedData, "WHISPER", sender)
+        debug:DebugPrint("Sync", "Sent SyncData to " .. sender)
+    else
+        debug:DebugPrint("Sync", "Failed to serialize SyncData for " .. sender)
+    end
 end
 
-function ns.sync:HandleSyncData(sender, message)
+function module:HandleSyncData(sender, message)
     local dataType = message.dataType
     local data = message.data
-    ns.guild:DebugPrint("Received SyncData from " .. sender .. " for " .. dataType)
+    debug:DebugPrint("Sync", "Received SyncData from " .. sender .. " for " .. dataType)
 
     -- Verarbeite die empfangenen Daten
     if dataType == "Settings" then
         -- Überschreibe die aktuellen Einstellungen mit den empfangenen
         LootCouncilRandomizer.db.profile.settings = data
-        ns.guild:DebugPrint("Settings updated from sync with " .. sender)
+        debug:DebugPrint("Sync", "Settings updated from sync with " .. sender)
         -- Aktualisiere ggf. die Optionsoberfläche
         LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
-    
     elseif dataType == "Statistics" then
         -- Aktualisiere die Statistiken
         LootCouncilRandomizer.db.profile.statistics = data
-        ns.guild:DebugPrint("Statistics updated from sync with " .. sender)
+        debug:DebugPrint("Sync", "Statistics updated from sync with " .. sender)
     end
-    
 
     -- Sende SyncComplete
     local completeMessage = {
         type = MESSAGE_TYPES.SYNC_COMPLETE,
         dataType = dataType,
     }
-    local serializedComplete = self:SerializeData(completeMessage)
-    AceComm:SendCommMessage(SYNC_PREFIX, serializedComplete, "WHISPER", sender)
-    ns.guild:DebugPrint("Sent SyncComplete to " .. sender)
+    local serializedComplete = utility:SerializeData(completeMessage)
+    if serializedComplete then
+        self:SendCommMessage(SYNC_PREFIX, serializedComplete, "WHISPER", sender)
+        debug:DebugPrint("Sync", "Sent SyncComplete to " .. sender)
+    else
+        debug:DebugPrint("Sync", "Failed to serialize SyncComplete for " .. sender)
+    end
 end
 
-function ns.sync:HandleSyncComplete(sender, message)
+function module:HandleSyncComplete(sender, message)
     local dataType = message.dataType
-    ns.guild:DebugPrint("Received SyncComplete from " .. sender .. " for " .. dataType)
+    debug:DebugPrint("Sync", "Received SyncComplete from " .. sender .. " for " .. dataType)
 
     -- Entferne die pendingSync
     if self.pendingSyncs then
         self.pendingSyncs[sender] = nil
     end
 
-    ns.guild:AddToLog("Synchronization with " .. sender .. " completed.")
+    LootCouncilRandomizer:AddToLog("Synchronization with " .. sender .. " completed.")
 end
 
-function ns.sync:SerializeData(data)
-    local serialized = AceSerializer:Serialize(data)
-    local compressed = LibCompress:Compress(serialized)
-    local encoded = LibCompressEncoder:Encode(compressed)
-    return encoded
-end
-
-function ns.sync:DeserializeData(data)
-    local decoded = LibCompressEncoder:Decode(data)
-    if not decoded then return false, "Decoding failed" end
-    local decompressed, decompressedMessage = LibCompress:Decompress(decoded)
-    if not decompressed then return false, "Decompression failed: " .. decompressedMessage end
-    local success, deserialized = AceSerializer:Deserialize(decompressed)
-    if not success then return false, "Deserialization failed" end
-    return true, deserialized
-end
-
-function ns.sync:RegisterEvents()
-    self:RegisterComm(SYNC_PREFIX, "OnCommReceived")
-end
-
-function ns.sync:ShowSyncConfirmationPopup(sender, dataType)
-    StaticPopupDialogs["LCR_SYNC_CONFIRMATION"] = {
-        text = sender .. " wants to sync " .. dataType .. " with you. Do you accept?",
-        button1 = "Accept",
-        button2 = "Decline",
-        OnAccept = function()
-            self:OnSyncAccept(sender, dataType)
-        end,
-        OnCancel = function()
-            self:OnSyncDecline(sender, dataType)
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = true,
-    }
-    StaticPopup_Show("LCR_SYNC_CONFIRMATION")
-end
+return ns.sync

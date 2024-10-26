@@ -1,8 +1,9 @@
 local ADDON_NAME, ns = ...
-ns.guild = {}
+ns.debug = {}
+local utility = ns.utility
 
 local logBuffer = ""
-function ns.guild:AddToLog(message)
+function ns.debug:AddToLog(message)
     logBuffer = logBuffer .. message .. "\n"
     if self.editBox then
         self.editBox:SetText(logBuffer)
@@ -12,23 +13,30 @@ function ns.guild:AddToLog(message)
     end
 end
 
-
-
-function ns.guild:ClearLog()
+function ns.debug:ClearLog()
     logBuffer = ""
-end
-
-function ns.guild:GetLog()
-    return logBuffer
-end
-
-function ns.guild:DebugPrint(message)
-    if LootCouncilRandomizer.db.profile.settings.debugMode then 
-        ns.guild:AddToLog(message)
+    if self.editBox then
+        self.editBox:SetText("")
     end
 end
 
-function ns.guild:GetGuildRanks()
+function ns.debug:GetLog()
+    return logBuffer
+end
+
+function ns.debug:DebugPrint(category, message)
+    if LootCouncilRandomizer.db.profile.settings.debugMode then
+        if not self.AddToLog then
+            print("AddToLog function is missing!")
+            return
+        end
+        self:AddToLog("[" .. category .. "] " .. message)
+    end
+end
+
+
+
+function ns.debug:GetGuildRanks()
     local ranks = {}
     if IsInGuild() then
         for i = 1, GuildControlGetNumRanks() do
@@ -41,7 +49,7 @@ function ns.guild:GetGuildRanks()
     return ranks
 end
 
-function ns.guild:GetMembersByRank(rankIndex)
+function ns.debug:GetMembersByRank(rankIndex)
     local members = {}
     if IsInGuild() then
         for i = 1, GetNumGuildMembers() do
@@ -56,7 +64,7 @@ function ns.guild:GetMembersByRank(rankIndex)
     return members
 end
 
-function ns.guild:GetOptions()
+function ns.debug:GetOptions()
     local options = {
         name = "DEBUG",
         type = "group",
@@ -89,10 +97,10 @@ function ns.guild:GetOptions()
     return options
 end
 
-function ns.guild:GetGuildRanksOptions()
+function ns.debug:GetGuildRanksOptions()
     local options = {}
     local selectedRanks = LootCouncilRandomizer.db.profile.settings.selectedRanks or {}
-    local guildRanks = ns.guild:GetGuildRanks()
+    local guildRanks = ns.debug:GetGuildRanks()
 
     for rankIndex, isSelected in pairs(selectedRanks) do
         if isSelected and guildRanks[rankIndex] then
@@ -126,7 +134,7 @@ function ns.guild:GetGuildRanksOptions()
     return options
 end
 
-function ns.guild:GetCurrentGroupsOptions()
+function ns.debug:GetCurrentGroupsOptions()
     local options = {}
 
     local groupMembers = ns.randomizer:GetCurrentEligibleMembers()
@@ -162,11 +170,11 @@ function ns.guild:GetCurrentGroupsOptions()
     return options
 end
 
-function ns.guild:ShowGroupMembers()
+function ns.debug:ShowGroupMembers()
     local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
 
     for i = 1, groupCount do
-        local members = ns.guild:GetMembersByGroup(i)
+        local members = ns.debug:GetMembersByGroup(i)
         if #members > 0 then
             print("Group " .. i .. " members:", table.concat(members, ", "))
         else
@@ -175,10 +183,10 @@ function ns.guild:ShowGroupMembers()
     end
 end
 
-function ns.guild:GetMembersByGroup(groupIndex)
+function ns.debug:GetMembersByGroup(groupIndex)
     local groupRanks = LootCouncilRandomizer.db.profile.settings["groupRanks" .. groupIndex]
     local members = {}
-    local raidMembers = ns.guild:GetRaidMembers()
+    local raidMembers = ns.debug:GetRaidMembers()
 
     if IsInGuild() and IsInRaid() then
         for i = 1, GetNumGuildMembers() do
@@ -195,7 +203,7 @@ function ns.guild:GetMembersByGroup(groupIndex)
     return members
 end
 
-function ns.guild:GetRaidMembers()
+function ns.debug:GetRaidMembers()
     local raidMembers = {}
     local numRaidMembers = GetNumGroupMembers()
 
@@ -211,7 +219,7 @@ function ns.guild:GetRaidMembers()
     return raidMembers
 end
 
-function ns.guild:GetRaidMembersWithRanks()
+function ns.debug:GetRaidMembersWithRanks()
     local raidMembers = {}
     local numRaidMembers = GetNumGroupMembers()
 
@@ -220,7 +228,7 @@ function ns.guild:GetRaidMembersWithRanks()
             local name, _, _, _, _, _, _, online = GetRaidRosterInfo(i)
             if name and online then 
                 name = Ambiguate(name, "short")
-                local guildIndex = ns.guild:GetGuildMemberIndexByName(name)
+                local guildIndex = ns.debug:GetGuildMemberIndexByName(name)
                 if guildIndex then
                     local _, _, rankIndex = GetGuildRosterInfo(guildIndex)
                     rankIndex = rankIndex + 1
@@ -233,7 +241,7 @@ function ns.guild:GetRaidMembersWithRanks()
     return raidMembers
 end
 
-function ns.guild:GetGuildMemberIndexByName(name)
+function ns.debug:GetGuildMemberIndexByName(name)
     if IsInGuild() then
         for i = 1, GetNumGuildMembers() do
             local guildName = GetGuildRosterInfo(i)
@@ -246,7 +254,7 @@ function ns.guild:GetGuildMemberIndexByName(name)
     return nil
 end
 
-function ns.guild:GetGuildMembersWithRanks()
+function ns.debug:GetGuildMembersWithRanks()
     local guildMembers = {}
     if IsInGuild() then
         for i = 1, GetNumGuildMembers() do
@@ -261,31 +269,16 @@ function ns.guild:GetGuildMembersWithRanks()
     return guildMembers
 end
 
-function ns.guild:CreateLogFrame()
+function ns.debug:CreateLogFrame()
     if self.logFrame then return end
 
-    local frame = CreateFrame("Frame", "LootCouncilRandomizerLogFrame", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(500, 400)
-    frame:SetPoint("CENTER")
-    frame:SetFrameStrata("DIALOG")
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:SetClampedToScreen(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-
-    -- Titel setzen
-    frame.title = frame:CreateFontString(nil, "OVERLAY")
-    frame.title:SetFontObject("GameFontHighlightLarge")
-    frame.title:SetPoint("TOP", frame.TitleBg, "TOP", 0, -5)
-    frame.title:SetText("LootCouncilRandomizer Log")
-
+    -- Nutzung der generischen Fenster-Erstellungsfunktion
+    self.logFrame = utility:CreateBasicWindow("LootCouncilRandomizerLogFrame", "LootCouncilRandomizer Log", 500, 400)
 
     -- ScrollFrame
-    local scrollFrame = CreateFrame("ScrollFrame", "LootCouncilRandomizerLogScrollFrame", frame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 15, -40)
-    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 45)
+    local scrollFrame = CreateFrame("ScrollFrame", "LootCouncilRandomizerLogScrollFrame", self.logFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", self.logFrame, "TOPLEFT", 15, -40)
+    scrollFrame:SetPoint("BOTTOMRIGHT", self.logFrame, "BOTTOMRIGHT", -30, 45)
 
     -- EditBox
     local editBox = CreateFrame("EditBox", nil, scrollFrame)
@@ -298,20 +291,19 @@ function ns.guild:CreateLogFrame()
     scrollFrame:SetScrollChild(editBox)
 
     -- Clear-Button
-    local clearButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    local clearButton = CreateFrame("Button", nil, self.logFrame, "UIPanelButtonTemplate")
     clearButton:SetSize(80, 22)
-    clearButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 15, 15)
+    clearButton:SetPoint("BOTTOMLEFT", self.logFrame, "BOTTOMLEFT", 15, 15)
     clearButton:SetText("Clear")
     clearButton:SetScript("OnClick", function()
-        ns.guild:ClearLog()
+        ns.debug:ClearLog()
         editBox:SetText("")
     end)
 
-    self.logFrame = frame
     self.editBox = editBox
 end
 
-function ns.guild:ShowLogFrame()
+function ns.debug:ShowLogFrame()
     if not self.logFrame then
         self:CreateLogFrame()
     end
@@ -325,13 +317,13 @@ function ns.guild:ShowLogFrame()
     end
 end
 
-function ns.guild:HideLogFrame()
+function ns.debug:HideLogFrame()
     if self.logFrame then
         self.logFrame:Hide()
     end
 end
 
-function ns.guild:ToggleLogFrame()
+function ns.debug:ToggleLogFrame()
     if self.logFrame and self.logFrame:IsShown() then
         self:HideLogFrame()
     else
@@ -339,14 +331,14 @@ function ns.guild:ToggleLogFrame()
     end
 end
 
-function ns.guild:GetLogOptions()
+function ns.debug:GetLogOptions()
     local options = {
         openLogWindowButton = {
             type = "execute",
             name = "Open Log Window",
             desc = "Opens the log output window.",
             func = function()
-                ns.guild:ShowLogFrame()
+                ns.debug:ShowLogFrame()
             end,
             order = 1,
         },
@@ -355,7 +347,7 @@ function ns.guild:GetLogOptions()
             name = "Clear Log",
             desc = "Clear the current log output.",
             func = function()
-                ns.guild:ClearLog()
+                ns.debug:ClearLog()
             end,
             order = 2,
         },

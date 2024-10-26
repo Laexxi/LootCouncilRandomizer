@@ -1,5 +1,6 @@
 local ADDON_NAME, ns = ...
 ns.statistics = {}
+local utility = ns.utility
 
 function ns.statistics:GetOptions()
     return {
@@ -10,23 +11,18 @@ function ns.statistics:GetOptions()
                 type = "execute",
                 name = "Reset Statistics",
                 desc = "This will reset all statistics.",
-                confirm = true,
-                confirmText = "Are you sure you want to reset all statistics?",
                 func = function()
-                    StaticPopupDialogs["CONFIRM_RESET_STATS"] = {
-                        text = "Are you sure you want to reset all statistics? This action cannot be undone.",
-                        button1 = "Yes",
-                        button2 = "No",
-                        OnAccept = function()
+                    utility:CreatePopup(
+                        "CONFIRM_RESET_STATS",
+                        "Are you sure you want to reset all statistics? This action cannot be undone.",
+                        "Yes",
+                        "No",
+                        function()
                             LootCouncilRandomizer.db.profile.statistics = {}
                             print("Loot Council Randomizer: All statistics have been reset.")
                         end,
-                        timeout = 0,
-                        whileDead = true,
-                        hideOnEscape = true,
-                        preferredIndex = 3,
-                    }
-                    StaticPopup_Show("CONFIRM_RESET_STATS")
+                        nil
+                    )
                 end,
                 order = 1,
             },
@@ -44,12 +40,8 @@ function ns.statistics:GetOptions()
 end
 
 function ns.statistics:ShowStatisticsWindow()
-    if self.statsWindow then
-        if self.statsWindow:IsShown() then
-            self.statsWindow:Hide()
-        else
-            self.statsWindow:Show()
-        end
+    if self.statsWindow and self.statsWindow:IsShown() then
+        self.statsWindow:Hide()
         return
     end
 
@@ -61,12 +53,7 @@ function ns.statistics:ShowStatisticsWindow()
     for member, data in pairs(stats) do
         local timesSelected = data.timesSelected or 0
         local lastSelectedTime = data.lastSelectedTime
-        local lastSelected
-        if lastSelectedTime then
-            lastSelected = date("%d.%m.%Y", lastSelectedTime) -- Nur Datum anzeigen
-        else
-            lastSelected = "-"
-        end
+        local lastSelected = lastSelectedTime and date("%d.%m.%Y", lastSelectedTime) or "-"
         table.insert(memberStats, {
             member = member,
             timesSelected = timesSelected,
@@ -79,30 +66,13 @@ function ns.statistics:ShowStatisticsWindow()
         return a.timesSelected > b.timesSelected
     end)
 
-    -- Erstelle das Fenster
-    local frame = CreateFrame("Frame", "LootCouncilRandomizerStatsWindow", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(450, 400)
-    frame:SetPoint("CENTER")
+    -- Nutzung der generischen Fenster-Erstellungsfunktion
+    self.statsWindow = utility:CreateBasicWindow("LootCouncilRandomizerStatsWindow", "Loot Council Randomizer Statistics", 450, 400)
 
-    -- Stelle sicher, dass das Fenster über anderen Fenstern erscheint
-    frame:SetFrameStrata("TOOLTIP")
-    frame:SetFrameLevel(frame:GetFrameLevel() + 10)
-
-    frame:SetMovable(true)
-    frame:EnableMouse(true)
-    frame:RegisterForDrag("LeftButton")
-    frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-
-    frame.title = frame:CreateFontString(nil, "OVERLAY")
-    frame.title:SetFontObject("GameFontHighlightLarge")
-    frame.title:SetPoint("TOP", frame.TitleBg, "TOP", 0, -5)
-    frame.title:SetText("Loot Council Randomizer Statistics")
-
-    -- ScrollFrame
-    local scrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -50)
-    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, 10)
+    -- ScrollFrame erstellen
+    local scrollFrame = CreateFrame("ScrollFrame", nil, self.statsWindow, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", self.statsWindow, "TOPLEFT", 10, -50)
+    scrollFrame:SetPoint("BOTTOMRIGHT", self.statsWindow, "BOTTOMRIGHT", -30, 10)
 
     -- Inhalt des ScrollFrames
     local contentHeight = 20 * (#memberStats + 1)
@@ -166,7 +136,7 @@ function ns.statistics:ShowStatisticsWindow()
         lastText:SetText(data.lastSelected)
     end
 
-    self.statsWindow = frame
+    self.statsWindow:Show()
 end
 
 function ns.statistics:UpdateMemberStats(memberName)
@@ -174,7 +144,7 @@ function ns.statistics:UpdateMemberStats(memberName)
         LootCouncilRandomizer.db.profile.statistics[memberName] = { timesSelected = 0, lastSelectedTime = 0 }
     end
 
-    LootCouncilRandomizer.db.profile.statistics[memberName].timesSelected = 
+    LootCouncilRandomizer.db.profile.statistics[memberName].timesSelected =
         (LootCouncilRandomizer.db.profile.statistics[memberName].timesSelected or 0) + 1
 
     LootCouncilRandomizer.db.profile.statistics[memberName].lastSelectedTime = time()

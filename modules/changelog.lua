@@ -26,10 +26,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
-        "|cffffd700Version 1.6.0-alpha5|r",
-        "|cff00ff00- For you alpha enjoyers: I test and fix the sync feature.|r",
         "|cffffd700Version 1.6.0|r",
-        "|cff00ff00- Added sync functionality.|r",
+        "|cff00bfff- Code Refactoring and Cleanup.|r",
+        "|cff00ff00- Trying to add Sync, but still bugged and does not work.|r",
         "",
         "|cffffd700Version 1.5.2|r",
         "|cff00bfff- Redesign of Statistics window.|r",

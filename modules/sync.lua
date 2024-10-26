@@ -185,11 +185,11 @@
 
     function module:RegisterEvents()
         self:RegisterComm(SYNC_PREFIX, "OnCommReceived")
-        print("Registered communication with prefix:", SYNC_PREFIX)
     end
 
     function module:InitiateSettingsSync()
         local targetPlayer = LootCouncilRandomizer.db.profile.settings.syncSettingsPlayerName
+        self.currentSyncType = "Settings"
         if not targetPlayer or targetPlayer == "" then
             print("Please specify a player name to sync settings with.")
             return
@@ -223,6 +223,7 @@
     function module:InitiateStatisticsSync()
         local syncTo = LootCouncilRandomizer.db.profile.settings.syncTo
         local targetPlayer
+        self.currentSyncType = "Statistics"
     
         if syncTo == "player" then
             targetPlayer = LootCouncilRandomizer.db.profile.settings.syncToPlayerName
@@ -440,14 +441,22 @@
     function module:HandleSyncComplete(sender, message)
         local dataType = message.dataType
         debug:DebugPrint("Sync", "Received SyncComplete from " .. sender .. " for " .. dataType)
+    
+        self.currentSyncType = nil
+        self.ClearPendingSync(sender)
+    
+        LootCouncilRandomizer:AddToLog("Synchronization with " .. sender .. " completed.")
+        LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+    end
 
-        -- Entferne die pendingSync
+    function module:ClearPendingSync(sender)
         if self.pendingSyncs then
             self.pendingSyncs[sender] = nil
+            debug:DebugPrint("Sync", "Cleared pending sync data for " .. sender)
         end
-
-        LootCouncilRandomizer:AddToLog("Synchronization with " .. sender .. " completed.")
     end
+    
+    
 
     function module:SendTestMessage()
         local playerName = UnitName("player") -- Hole den eigenen Spielernamen

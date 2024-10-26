@@ -1,13 +1,27 @@
 local ADDON_NAME, ns = ...
-ns.sync = {}
-local module = ns.sync
+local LootCouncilRandomizer = LibStub("AceAddon-3.0"):GetAddon(ADDON_NAME)
+local module = LootCouncilRandomizer:NewModule("Sync", "AceComm-3.0")
+ns.sync = module
 local AceComm = LibStub("AceComm-3.0")
-AceComm:Embed(module)
 
 local SYNC_PREFIX = "LCR_Sync"
 
 local utility = ns.utility
 local debug = ns.debug
+
+local function CreatePopup(name, text, button1, button2, onAccept, onCancel)
+    StaticPopupDialogs[name] = {
+        text = text,
+        button1 = button1,
+        button2 = button2,
+        OnAccept = onAccept,
+        OnCancel = onCancel,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+    }
+    StaticPopup_Show(name)
+end
 
 -- Nachrichtentypen
 local MESSAGE_TYPES = {
@@ -83,6 +97,16 @@ function module:GetOptions()
                             module:InitiateSettingsSync()
                         end,
                         order = 5,
+                        width = "normal",
+                    },
+                    testSyncButton = {
+                        type = "execute",
+                        name = "Test Sync Message",
+                        desc = "Send a test sync message to yourself.",
+                        func = function()
+                            module:SendTestMessage()
+                        end,
+                        order = 6,
                         width = "normal",
                     },
                 },
@@ -185,6 +209,7 @@ end
 
 function module:RegisterEvents()
     self:RegisterComm(SYNC_PREFIX, "OnCommReceived")
+    print("Registered communication with prefix:", SYNC_PREFIX)
 end
 
 function module:InitiateSettingsSync()
@@ -216,6 +241,7 @@ function module:InitiateSettingsSync()
     end
 
     self:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", targetPlayer)
+    print("Serialized message:", serializedMessage)
     debug:DebugPrint("Sync", "Sent SyncRequest to " .. targetPlayer)
 end
 
@@ -280,6 +306,17 @@ function module:OnCommReceived(prefix, message, distribution, sender)
     local success, receivedMessage = utility:DeserializeData(message)
     if not success then
         debug:DebugPrint("Sync", "Failed to deserialize message from " .. sender)
+        return
+    end
+
+    if receivedMessage.type == "TestMessage" then
+        utility:CreatePopup(
+            "LCR_TEST_MESSAGE",
+            "Test message received from " .. sender .. ": " .. (receivedMessage.content or ""),
+            "Okay",
+            nil,
+            function() print("Test message acknowledged.") end
+        )
         return
     end
 
@@ -450,6 +487,25 @@ function module:HandleSyncComplete(sender, message)
     end
 
     LootCouncilRandomizer:AddToLog("Synchronization with " .. sender .. " completed.")
+end
+
+function module:SendTestMessage()
+    local playerName = UnitName("player") -- Hole den eigenen Spielernamen
+
+    local message = {
+        type = "TestMessage",
+        content = "This is a test sync message.",
+    }
+
+    local serializedMessage = utility:SerializeData(message)
+
+    if not serializedMessage then
+        debug:DebugPrint("Sync", "Failed to serialize test message")
+        return
+    end
+
+    AceComm:SendCommMessage(SYNC_PREFIX, serializedMessage, "WHISPER", playerName)
+    debug:DebugPrint("Sync", "Sent test message to " .. playerName)
 end
 
 return ns.sync

@@ -1,5 +1,7 @@
 local ADDON_NAME, ns = ...
 LootCouncilRandomizer = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0")
+local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+local ADDON_VERSION = GetAddOnMetadata(ADDON_NAME, "Version")
 
 function LootCouncilRandomizer:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("LootCouncilRandomizerDB", {
@@ -37,7 +39,7 @@ end
 function LootCouncilRandomizer:SetupOptions()
     ns.debug:AddToLog("Setting up options")
     local options = {
-        name = ADDON_NAME,
+        name = ADDON_NAME .. " - v" .. (ADDON_VERSION or "Unknown"),
         handler = LootCouncilRandomizer,
         type = 'group',
         childGroups = 'tab',

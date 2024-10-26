@@ -447,6 +447,15 @@
     
         LootCouncilRandomizer:AddToLog("Synchronization with " .. sender .. " completed.")
         LibStub("AceConfigRegistry-3.0"):NotifyChange(ADDON_NAME)
+        
+        utility:CreatePopup(
+        "LCR_RELOAD_UI",
+        "You need to reload your interface for the addon to work properly. Do you want to reload now?",
+        "Yes",
+        "No",
+        function() ReloadUI() end,
+        nil
+    )
     end
 
     function module:ClearPendingSync(sender)

@@ -1,6 +1,6 @@
 # LootCouncilRandomizer
 
-**Version:** 1.6.0
+**Version:** 1.6.1
 **Author:** Laexxi-Antonidas
 
 LootCouncilRandomizer helps guilds to randomly select loot council members from predefined groups. This addon allows guild leaders to import guild members, assign them to custom groups, and ensure fair and unbiased loot distribution by preventing re-selection within a configurable timeframe.
@@ -12,10 +12,11 @@ LootCouncilRandomizer helps guilds to randomly select loot council members from 
 - **User Interface:** Intuitive UI with a minimap button and organized guild overview.
 - **Statistics Tracking:** Track and display selection statistics to monitor fairness.
 - **Re-selection Prevention:** Prevent re-selection of members within a configurable timeframe.
+- **Sync for settings and statistics.**
 
 ## Installation
 
-1. Download the latest version of LootCouncilRandomizer from [CurseForge](https://www.curseforge.com).
+1. Download the latest version of LootCouncilRandomizer from [CurseForge](https://www.curseforge.com/wow/addons/lootcouncilrandomizer).
 2. Extract the downloaded zip file to your World of Warcraft `Interface/AddOns` directory.
 3. Launch World of Warcraft and enable the addon from the AddOns menu.
 
@@ -53,7 +54,6 @@ LootCouncilRandomizer helps guilds to randomly select loot council members from 
 ## Upcoming Features
 
 - **Localization**
-- **Sync for settings and statistics.**
 
 ## Support
 

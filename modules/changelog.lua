@@ -26,6 +26,8 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.6.2|r",
+        "|ffff0000- Small Bugfix to fix rolling council.|r",
         "|cffffd700Version 1.6.1|r",
         "|cffff0000- Sync should work now. If you try to sync settings and statistics right after, you need to reload you UI.|r",
         "|cff00bfff- Added the Version in the title.|r",

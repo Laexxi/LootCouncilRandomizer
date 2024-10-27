@@ -109,7 +109,7 @@ end
 
 
 function module:UpdateSelectionHistory(member)
-    ns.guild:AddToLog("Randomizer", "Updating selection history for " .. member)
+    ns.debug:AddToLog("Randomizer", "Updating selection history for " .. member)
     LootCouncilRandomizer.db.profile.statistics[member] = LootCouncilRandomizer.db.profile.statistics[member] or {}
     LootCouncilRandomizer.db.profile.statistics[member].lastSelectedTime = time()
     LootCouncilRandomizer.db.profile.statistics[member].timesSelected = (LootCouncilRandomizer.db.profile.statistics[member].timesSelected or 0) + 1

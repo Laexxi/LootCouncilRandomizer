@@ -26,6 +26,8 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.6.3|r",
+        "|ffff0000- Update to new WoW version.|r",
         "|cffffd700Version 1.6.2|r",
         "|ffff0000- Small Bugfix to fix rolling council.|r",
         "|cffffd700Version 1.6.1|r",

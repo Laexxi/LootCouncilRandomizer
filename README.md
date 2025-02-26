@@ -1,6 +1,6 @@
 # LootCouncilRandomizer
 
-**Version:** 1.6.3
+**Version:** 1.7.0
 **Author:** Laexxi-Antonidas
 
 LootCouncilRandomizer helps guilds to randomly select loot council members from predefined groups. This addon allows guild leaders to import guild members, assign them to custom groups, and ensure fair and unbiased loot distribution by preventing re-selection within a configurable timeframe.

@@ -26,6 +26,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 1.7.0|r",
+        "|ffff0000- Update to new WoW version.|r",
+        "|cff00ff00- Implementation of new Addon Categories.|r",
         "|cffffd700Version 1.6.3|r",
         "|ffff0000- Update to new WoW version.|r",
         "|cffffd700Version 1.6.2|r",

@@ -132,7 +132,7 @@ function module:ShowRerollPopup(entries, eligibleLists)
 
     -- Accept‑Button
     local accept = AceGUI:Create("Button")
-    accept:SetText("Bestätigen")
+    accept:SetText("Accept")
     accept:SetFullWidth(true)
     accept:SetCallback("OnClick", function()
         frame:Hide()

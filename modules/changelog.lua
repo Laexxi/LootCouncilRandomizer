@@ -26,13 +26,16 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 2.0.0|r",
+        "|cff00ff00- New feature: Advanced Mode. This one bothered me a lot. IF you want you can get a preselection and reroll single members. I know I removed 'forced/excluded Player' functionality, buw truth is, we needed such a feature some times. Maybe it is not the best idea to populate the council with only a group of reallife friends.|r",
+        "|cff00ff00- Added possibility to annonce rerolls in advanced mode.|r",
         "|cffffd700Version 1.7.0|r",
-        "|ffff0000- Update to new WoW version.|r",
+        "|cffff0000- Update to new WoW version.|r",
         "|cff00ff00- Implementation of new Addon Categories.|r",
         "|cffffd700Version 1.6.3|r",
-        "|ffff0000- Update to new WoW version.|r",
+        "|cffff0000- Update to new WoW version.|r",
         "|cffffd700Version 1.6.2|r",
-        "|ffff0000- Small Bugfix to fix rolling council.|r",
+        "|cffff0000- Small Bugfix to fix rolling council.|r",
         "|cffffd700Version 1.6.1|r",
         "|cffff0000- Sync should work now. If you try to sync settings and statistics right after, you need to reload you UI.|r",
         "|cff00bfff- Added the Version in the title.|r",

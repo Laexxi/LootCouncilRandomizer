@@ -17,6 +17,8 @@ function LootCouncilRandomizer:OnInitialize()
                 ignoreMinMembers = false,
                 debugTestMode = false,
                 syncWhenRolling = false,
+                advancedMode = false,
+                advancedAnnounceChanges = false,
             },
             statistics = {},
         }

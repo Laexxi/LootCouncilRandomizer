@@ -61,13 +61,6 @@ function ns.config:GetOptions()
                         end,
                         order = 4,
                     },
-                    selectCuratedMode = {
-                        type = "toggle",
-                        name = "(TODO) Activate Curated Mode",
-                        desc = "When you activate this, you can reroll singel selections of the council before posting in raidchat.",
-                        
-                        order = 5,
-                    },
                     selectStatisticsMode = {
                         type = "toggle",
                         name = "Use Officer Notes",
@@ -78,7 +71,7 @@ function ns.config:GetOptions()
                         set = function(info, value)
                             LootCouncilRandomizer.db.profile.settings.selectStatisticsMode = value
                         end,
-                        order = 98,
+                        order = 4.5,
                     },
                     selectDebugMode = {
                         type = "toggle",
@@ -94,9 +87,35 @@ function ns.config:GetOptions()
                                 LibStub("AceConfigRegistry-3.0"):NotifyChange("LootCouncilRandomizer")
                             end
                         end,
-                        order = 99,
+                        order = 4.6,
                     },
-                    
+                    selectCuratedMode = {
+                        type = "toggle",
+                        name = "Advanced Mode",
+                        desc = "When you activate this, you can reroll single selections of the council before posting in raidchat.",
+                        get = function(info)
+                            return LootCouncilRandomizer.db.profile.settings.advancedMode or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.advancedMode = value
+                        end,
+                        order = 5,
+                    },
+                    announceChanges = {
+                        type = "toggle",
+                        name = "Advanced: Announce rerolls",
+                        desc = "Write rerolls of the council in the Raidchat.",
+                        disabled = function()
+                            return not LootCouncilRandomizer.db.profile.settings.advancedMode
+                        end,
+                        get = function (info)
+                            return LootCouncilRandomizer.db.profile.settings.advancedAnnounceChanges or false
+                        end,
+                        set = function(info, value)
+                            LootCouncilRandomizer.db.profile.settings.advancedAnnounceChanges = value
+                        end,
+                        order = 5.6,
+                    },                    
                 },
             },
             groups = {

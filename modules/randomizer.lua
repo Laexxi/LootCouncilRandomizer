@@ -9,18 +9,31 @@ local math_random = math.random
 local table_insert = table.insert
 local table_remove = table.remove
 
+local AceGUI = LibStub("AceGUI-3.0")
+
 function module:RandomizeCouncil()
     debug:DebugPrint("Randomizer", "Started council randomization")
-    local councilMembers = {}
-    local groupMembers = module:GetRaidMembersByGroup()
-    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
 
+    if LootCouncilRandomizer.db.profile.settings.syncWhenRolling then
+                ns.sync:InitiateStatisticsSync()
+            end
+
+    local originalEntries, eligibleLists = module:PrepareCouncil()
+    if LootCouncilRandomizer.db.profile.settings.advancedMode then
+        module:ShowRerollPopup(originalEntries, eligibleLists)
+    else
+        module:FinalizeCouncil(originalEntries, eligibleLists)
+    end
+end
+
+function module:PrepareCouncil()
+    local groupMembers = {}
+    local entries = {}
+    local eligibleLists = {}
     local debugMode = LootCouncilRandomizer.db.profile.settings.debugMode
     local ignoreMinMembers = LootCouncilRandomizer.db.profile.settings.ignoreMinMembers and debugMode
     local debugTestMode = LootCouncilRandomizer.db.profile.settings.debugTestMode and debugMode
-    if LootCouncilRandomizer.db.profile.settings.syncWhenRolling then
-        ns.sync:InitiateStatisticsSync()
-    end
+    local groupCount = LootCouncilRandomizer.db.profile.settings.councilPots or 1
 
     if debugTestMode then
         debug:DebugPrint("Randomizer", "Debug Test Mode is enabled. Getting members from guild.")
@@ -30,44 +43,130 @@ function module:RandomizeCouncil()
     end
 
     for i = 1, groupCount do
-        local groupName = LootCouncilRandomizer.db.profile.settings["groupName" .. i] or "Group " .. i
-        local numToSelect = LootCouncilRandomizer.db.profile.settings["groupSelection" .. i] or 0
+        local groupName = LootCouncilRandomizer.db.profile.settings["groupName"..i] or ("Group "..i)
+        local numToSelect = LootCouncilRandomizer.db.profile.settings["groupSelection"..i] or 0
+        local members = groupMembers[i] or {}
+        local eligible = module:FilterEligibleMembers(members, i)
 
-        if numToSelect > 0 then
-            local members = groupMembers[i] or {}
-            local eligibleMembers = module:FilterEligibleMembers(members, i)
+        eligibleLists[i] = eligible
 
-            local numEligible = #eligibleMembers
-            local numToSelectActual = numToSelect
+        local numEligible = #eligible
+        local numToSelectActual = numToSelect
 
-            if numEligible < numToSelect then
-                if ignoreMinMembers then
-                    numToSelectActual = numEligible
-                    debug:DebugPrint("Randomizer", "Not enough eligible members in " .. groupName .. ", but ignoring minimum members")
-                else
-                    debug:DebugPrint("Randomizer", "Not enough eligible members in " .. groupName)
-                    print("Not enough eligible members in " .. groupName .. " to " .. numToSelect .. " select members.")
-                    numToSelectActual = 0
-                end
+        if numEligible < numToSelect then
+            if ignoreMinMembers then
+                debug:DebugPrint("Randomizer", "Not enough eligible members in " .. groupName .. ", but ignoring minimum members")
+                numToSelectActual = numEligible
+            else
+                debug:DebugPrint("Randomizer", "Not enough eligible members in " .. groupName)
+                print("Not enough eligible members in " .. groupName .. " to select " .. numToSelect .. " members.")
+                numToSelectActual = 0
             end
+        end
 
-            if numToSelectActual > 0 then
-                debug:DebugPrint("Randomizer", "Selecting " .. numToSelectActual .. " members from " .. groupName)
-                local selectedMembers = module:SelectRandomMembers(eligibleMembers, numToSelectActual)
-                for _, member in ipairs(selectedMembers) do
-                    table_insert(councilMembers, member)
-                    if not ignoreMinMembers and not debugTestMode then
-                        module:UpdateSelectionHistory(member)
-                    else
-                        debug:DebugPrint("Randomizer", "Skipping statistics update for " .. member)
-                    end
-                end
+        for j = 1, numToSelectActual do
+            if #eligible > 0 then
+                local idx = math_random(1, #eligible)
+                local member = table_remove(eligible, idx)
+                table_insert(entries, { name = member, group = i })
             end
         end
     end
 
-    module:AnnounceCouncil(councilMembers)
-    debug:DebugPrint("Randomizer", "Council randomization complete")
+    return entries, eligibleLists
+end
+
+function module:ShowRerollPopup(entries, eligibleLists)
+    local frame = AceGUI:Create("Frame")
+    frame:SetTitle("LootCouncil Preview")
+    frame:SetLayout("Flow")
+    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget) end)
+    self.rerollFrame = frame
+
+    local current = {}
+    for i, e in ipairs(entries) do
+        current[i] = e.name 
+    end
+    -- für jeden Slot ein InlineGroup
+    for i, e in ipairs(entries) do
+        local group = AceGUI:Create("InlineGroup")
+        group:SetFullWidth(false)
+        group:SetLayout("List")
+        group:SetWidth(150)
+        group:SetTitle("Slot "..i)
+        frame:AddChild(group)
+
+        -- Label mit ursprünglichem Namen
+        local lbl = AceGUI:Create("Label")
+        lbl:SetText(e.name)
+        group:AddChild(lbl)
+
+        -- Dropdown mit allen eligible aus der Gruppe
+        local dd = AceGUI:Create("Dropdown")
+        local list = {}
+        for _, name in ipairs(eligibleLists[e.group]) do
+            list[name] = name
+        end
+        dd:SetList(list)
+        dd:SetValue(e.name)
+        dd:SetFullWidth(true)
+        dd:SetCallback("OnValueChanged", function(_, _, value)
+            current[i] = value
+        end)
+        group:AddChild(dd)
+
+        -- Würfel‑Button (Icon-only)
+        local btn = AceGUI:Create("Icon")
+        btn:SetImageSize(18,18)
+        btn:SetImage("Interface\\Buttons\\UI-GroupLoot-Dice-Up")
+        btn:SetCallback("OnClick", function()
+            local pool = eligibleLists[e.group]
+            if #pool > 0 then
+                local rnd = pool[ math_random(1, #pool) ]
+                dd:SetValue(rnd)
+                current[i] = rnd
+            end
+        end)
+        group:AddChild(btn)
+    end
+
+    -- Accept‑Button
+    local accept = AceGUI:Create("Button")
+    accept:SetText("Bestätigen")
+    accept:SetFullWidth(true)
+    accept:SetCallback("OnClick", function()
+        frame:Hide()
+        module:FinalizeCouncil(entries, current)
+    end)
+    frame:AddChild(accept)
+end
+
+function module:FinalizeCouncil(entries, current)
+    local announceChanges = LootCouncilRandomizer.db.profile.settings.advancedAnnounceChanges
+    if announceChanges then
+        for i, e in ipairs(entries) do
+            if e.name ~= current[i] then
+                SendChatMessage(
+                    string.format("%s should have been in the Council, but was replaced with %s", e.name, current[i]),
+                    "RAID"
+                )
+            end
+        end
+    end
+
+    for _, name in ipairs(current) do
+        module:UpdateSelectionHistory(name)
+    end
+
+    if #current > 0 then
+        SendChatMessage("Selected Loot Council Members:", "RAID")
+        for _, name in ipairs(current) do
+            SendChatMessage(name, "RAID")
+        end
+    else
+        print("No members selected for the Loot Council.")
+    end
+    debug:DebugPrint("Randomizer", "Council finalization complete")
 end
 
 function module:FilterEligibleMembers(members, groupIndex)
@@ -104,9 +203,6 @@ function module:FilterEligibleMembers(members, groupIndex)
 
     return eligibleMembers
 end
-
-
-
 
 function module:UpdateSelectionHistory(member)
     ns.debug:AddToLog("Randomizer", "Updating selection history for " .. member)
@@ -156,7 +252,6 @@ function module:AnnounceCouncil(council)
         print("No members selected for the Loot Council.")
     end
 end
-
 
 function module:GetRaidMembersByGroup()
     local raidMembers = debug:GetRaidMembersWithRanks()

@@ -20,5 +20,3 @@ modules\changelog.lua
 modules\sync.lua
 #localization\enUS.lua
 #localization\deDE.lua
-
-

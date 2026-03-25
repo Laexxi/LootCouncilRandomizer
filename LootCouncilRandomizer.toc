@@ -1,4 +1,4 @@
-## Interface: 110105
+## Interface: 120001
 ## Title: LootCouncilRandomizer
 ## Author: Laexxi-Antonidas
 ## Version: 2.0.0

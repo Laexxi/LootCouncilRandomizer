@@ -26,6 +26,9 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 2.0.1|r",
+        "|cff00ff00- Update for Midnight.|r",
+        "|cff00ff00- Added possibility to annonce rerolls in advanced mode.|r",
         "|cffffd700Version 2.0.0|r",
         "|cff00ff00- New feature: Advanced Mode. This one bothered me a lot. IF you want you can get a preselection and reroll single members. I know I removed 'forced/excluded Player' functionality, buw truth is, we needed such a feature some times. Maybe it is not the best idea to populate the council with only a group of reallife friends.|r",
         "|cff00ff00- Added possibility to annonce rerolls in advanced mode.|r",

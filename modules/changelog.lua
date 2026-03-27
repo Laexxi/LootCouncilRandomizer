@@ -26,6 +26,8 @@ end
 
 function ns.changelog:GetChangelogText()
     local changelog = {
+        "|cffffd700Version 2.0.2|r",
+        "|cff00ff00- Updated Libraries.|r",
         "|cffffd700Version 2.0.1|r",
         "|cff00ff00- Update for Midnight.|r",
         "|cff00ff00- Added possibility to annonce rerolls in advanced mode.|r",

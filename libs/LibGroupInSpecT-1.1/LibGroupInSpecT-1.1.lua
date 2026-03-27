@@ -969,11 +969,11 @@ function lib:UNIT_AURA (unit)
 end
 
 
-function lib:UNIT_SPELLCAST_SUCCEEDED (unit, _, spell_id)
-  if spell_id == 200749 then -- Activating Specialization
-    self:Query (unit) -- Definitely changed, so high prio refresh
-  end
-end
+-- function lib:UNIT_SPELLCAST_SUCCEEDED (unit, _, spell_id)
+--   if spell_id == 200749 then -- Activating Specialization
+--     self:Query (unit) -- Definitely changed, so high prio refresh
+--   end
+-- end
 
 
 -- External library functions

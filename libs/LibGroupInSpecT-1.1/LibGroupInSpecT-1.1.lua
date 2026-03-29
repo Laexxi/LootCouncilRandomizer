@@ -942,7 +942,7 @@ end
 function lib:UNIT_AURA (unit)
   local group = self.cache
   local guid = UnitGUID (unit)
-  local info = guid and group[guid]
+--  local info = guid and group[guid]
   if info then
     if not UnitIsUnit (unit, "player") then
       if UnitIsVisible (unit) then

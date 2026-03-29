@@ -928,7 +928,7 @@ end
 function lib:UNIT_NAME_UPDATE (unit)
   local group = self.cache
   local guid = UnitGUID (unit)
-  local info = guid and group[guid]
+  --local info = guid and group[guid]
   if info then
     self:UpdatePlayerInfo (guid, unit, info)
     if info.name ~= UNKNOWN then
